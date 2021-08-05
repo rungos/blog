@@ -12,13 +12,17 @@ cd docs/.vuepress/dist
 # 如果是发布到自定义域名
 # echo 'www.example.com' > CNAME
 
+cp ../../../.gitignore .gitignore
+
+
 git init
+git branch -m gh-pages
 git add -A
 git commit -m 'deploy'
 
 
 # 如果发布到 https://<USERNAME>.github.io/<REPO>
-# git push -f git@github.com:rungos/blog.git master:gh-pages
+git push -f git@github.com:rungos/blog.git gh-pages
 
 
 cd -
