@@ -137,11 +137,11 @@
   .pin-body{padding:14px 16px 16px; display:flex; flex-direction:column; flex:1}
   .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:22px; height:22px; padding-top:1px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .pin-loc{display:flex; align-items:center; color:var(--muted); font-size:13px; line-height:20px; height:20px; flex:none; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .pin-price{display:flex; align-items:baseline; gap:4px; margin-top:10px; height:26px; flex:none; flex-wrap:nowrap; overflow:hidden}
+  .pin-price{display:flex; align-items:center; gap:4px; margin-top:10px; height:26px; flex:none; flex-wrap:nowrap; overflow:hidden}
   .pin-price .pnone{font-size:13.5px; color:var(--muted)}
   .pin-price .pnum{font-size:18px; font-weight:800; color:var(--ink); white-space:nowrap; min-width:0}
   .pin-price .punit{font-size:12px; color:var(--muted); flex:none}
-  .pin-price .side{margin-left:auto; display:flex; align-items:baseline; gap:8px; min-width:0}
+  .pin-price .side{margin-left:auto; display:flex; align-items:center; gap:8px; min-width:0}
   .pin-price .ptotal{font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px}
   .pin-price.has-range .pnum{font-size:15.5px; letter-spacing:-.01em}
   .pin-price.has-range .ptotal{max-width:84px}
@@ -205,7 +205,9 @@
   .lcard{border:1px solid var(--line); border-radius:16px; padding:13px 15px 12px; margin-bottom:10px; background:var(--surface)}
   .lcard.dim{opacity:.55}
   .lrow1{display:flex; align-items:center; gap:6px; font-size:14.5px; font-weight:600; color:var(--ink)}
-  .lrow1 .lfav{margin-left:auto; color:var(--gold); font-size:15px; flex:none}
+  .lcard-rail{display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; flex:none}
+  .lcard-rail .lfav{color:var(--gold); font-size:15px; line-height:1.1}
+  .lcard-rail .lfav-off{visibility:hidden}
   .lrow2{display:flex; align-items:baseline; gap:9px; margin-top:5px; flex-wrap:wrap}
   .lrow2 .ltotal{font-size:21px; font-weight:800; color:var(--ink)}
   .lrow2 .ltotal small{font-size:12.5px; font-weight:600; color:var(--muted)}
@@ -214,7 +216,7 @@
   .lrow3{display:flex; align-items:center; gap:8px; margin-top:9px; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
   .lpill{font-size:11.5px; font-weight:600; line-height:1.5; padding:2.5px 9px; border-radius:999px; background:#E7F4EC; color:#177245}
   .lpill.off{background:var(--soft); color:var(--muted)}
-  .lrow3 .lpill{margin-left:auto; flex:none}
+  .lcard-rail .lpill{flex:none}
   .lnote{margin-top:8px; font-size:13px; color:var(--text); white-space:pre-wrap; word-break:break-word}
   .lops{display:flex; gap:6px; margin-top:11px; border-top:1px solid #f4f4f4; padding-top:10px; flex-wrap:wrap}
   .lop{font-size:13px; font-weight:600; color:var(--ink); padding:5px 13px; border-radius:999px; background:var(--soft); text-decoration:none; cursor:pointer; border:none}
@@ -264,15 +266,18 @@
   .lb-name{font-size:13px; color:var(--muted); max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .lb-bar .btn{height:38px; padding:0 18px; flex:none}
   /* ---------- floor plan (户型图) ---------- */
-  .lcard.has-plan{display:flex; gap:12px}
-  .lcard.has-plan .lcard-main{flex:1; min-width:0}
+  .lcard{display:flex; gap:12px}
+  .lcard .lcard-main{flex:1; min-width:0}
   .lthumb{flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; background:var(--soft); align-self:center}
   .lthumb img{width:100%; height:100%; object-fit:cover; display:block}
-  .plan-box{border-radius:14px; overflow:hidden; background:var(--soft); cursor:pointer; line-height:0}
-  .plan-box img{width:100%; max-height:340px; object-fit:contain; display:block}
-  .plan-ops{display:flex; gap:8px; margin-top:9px}
-  .plan-empty{display:flex; align-items:center; justify-content:center; width:100%; min-height:92px; border:1.5px dashed var(--line); border-radius:14px; color:var(--muted); font-size:14px; font-weight:600}
+  .plan-box{border-radius:14px; overflow:hidden; background:var(--soft); cursor:pointer; line-height:0; max-width:min(100%,340px); margin:0 auto}
+  .plan-box img{width:100%; max-height:300px; object-fit:contain; display:block}
+  .plan-ops{display:flex; gap:8px; margin-top:9px; justify-content:center}
+  .plan-empty{display:flex; align-items:center; justify-content:center; width:100%; max-width:min(100%,340px); margin:0 auto; min-height:92px; border:1.5px dashed var(--line); border-radius:14px; color:var(--muted); font-size:14px; font-weight:600}
   .plan-empty:hover{border-color:#d9d9d9; color:var(--ink)}
+  .lf-plan{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .lf-plan img{width:120px; max-height:90px; object-fit:contain; background:var(--soft); border-radius:10px; display:block}
+  .lf-plan .lf-plan-ops{display:flex; gap:8px}
 
   /* ---------- modal (edit / compare) ---------- */
   .modal-wrap{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
@@ -428,6 +433,7 @@
 <input type="file" id="import-file" accept=".json,application/json" class="hidden">
 <input type="file" id="media-file" accept="image/*,video/*" multiple class="hidden">
 <input type="file" id="plan-file" accept="image/*" class="hidden">
+<input type="file" id="plan-file-form" accept="image/*" class="hidden">
 
 <!-- ================= 详情（Pin 弹窗） ================= -->
 <div class="scrim" id="drawer-scrim"></div>
@@ -518,7 +524,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_ql7de3Phcu-6kKukB5vj5w_8oSIh9MC";
 /* ==================== 纯工具（无 DOM 依赖） ==================== */
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const isSet = v => v !== null && v !== undefined && v !== "";
-const fmtNum = v => isSet(v) ? Number(v).toLocaleString("zh-CN") : "";
+const fmtNum = v => { if (!isSet(v)) return ""; const n = Number(v); return isNaN(n) ? "" : n.toLocaleString("zh-CN"); };
 function linkify(text){
   return esc(text).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
 }
@@ -830,13 +836,15 @@ $("#btn-add-top").addEventListener("click", () => openEdit(null));
 
 
 /* ==================== 详情（Pin 弹窗） ==================== */
+const kvHas = v => isSet(v) && (typeof v !== "string" || v.trim() !== "");
 function kv(k, v, linkifyIt){
-  if (!isSet(v)) return "";
+  if (!kvHas(v)) return "";
   return `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${linkifyIt ? linkify(v) : esc(v)}</div></div>`;
 }
 function amenBlock(title, arr){
   if (!arr || !arr.length) return "";
-  const rows = arr.map(a => `<div class="amen">${esc(a.name||"")} <span class="d">${isSet(a.distanceKm)?a.distanceKm+" km":""}${a.note?" · "+esc(a.note):""}</span></div>`).join("");
+  const rows = arr.filter(a => a && (kvHas(a.name) || isSet(a.distanceKm) || kvHas(a.note))).map(a => `<div class="amen">${esc(a.name||"")} <span class="d">${isSet(a.distanceKm)?a.distanceKm+" km":""}${a.note?" · "+esc(a.note):""}</span></div>`).join("");
+  if (!rows) return "";
   return `<section class="dsec"><h4>${esc(title)}</h4>${rows}</section>`;
 }
 function commuteLine(label, km, min){
@@ -854,7 +862,7 @@ function detailHTML(h){
       <span class="dv-status">${h.status==="viewed"?"已看":"待看"}</span>
       <div class="dv-bottom">
         ${priceNumStr(h) ? `<div class="dv-price num${(isSet(h.unitPriceMin) && isSet(h.unitPriceMax) && h.unitPriceMin !== h.unitPriceMax) ? " range" : ""}">${esc(priceNumStr(h))} <small>元/㎡</small></div>` : ""}
-        ${totalRangeStr(h) ? `<div class="dv-total">${esc(totalRangeStr(h))}</div>` : (isSet(h.totalPriceNote) ? `<div class="dv-total">${esc(h.totalPriceNote)}</div>` : "")}
+        ${totalRangeStr(h) ? `<div class="dv-total">${esc(totalRangeStr(h))}</div>` : (isSet(h.totalPriceNote) && String(h.totalPriceNote).trim() !== "" ? `<div class="dv-total">${esc(h.totalPriceNote)}</div>` : "")}
         ${locLine ? `<div class="dv-loc">${esc(locLine)}</div>` : ""}
       </div>
     </div>
@@ -867,7 +875,10 @@ function detailHTML(h){
   s += kv("单价", priceStr(h));
   s += kv("总价范围", totalRangeStr(h));
   s += kv("最近成交价", isSet(h.recentDealPrice) ? fmtNum(h.recentDealPrice) + " 万" : "");
-  if (isSet(h.histPriceMin) || isSet(h.histPriceMax)) s += kv("历史成交价", `${fmtNum(h.histPriceMin)}–${fmtNum(h.histPriceMax)} 元/㎡`);
+  { const hpMin = fmtNum(h.histPriceMin), hpMax = fmtNum(h.histPriceMax);
+    if (hpMin && hpMax) s += kv("历史成交价", `${hpMin}–${hpMax} 元/㎡`);
+    else if (hpMin) s += kv("历史成交价", `${hpMin} 元/㎡起`);
+    else if (hpMax) s += kv("历史成交价", `不高于 ${hpMax} 元/㎡`); }
   s += kv("租售比", h.rentSaleRatio);
   s += kv("成交量", h.transactionVolume);
   if (s) html += `<section class="dsec"><h4>价格</h4>${s}</section>`;
@@ -1044,10 +1055,11 @@ function listingCardHTML(l){
   else if (l.hasElevator === false) infoParts.push("<span>无电梯</span>");
   const plan = getFloorPlan(l);
   const thumb = plan ? `<div class="lthumb" data-plan-thumb data-mpath="${esc(plan.path)}"><img alt="" loading="lazy"></div>` : "";
+  const rail = `<div class="lcard-rail">${l.isFavorite ? '<span class="lfav">★</span>' : '<span class="lfav lfav-off" aria-hidden="true">★</span>'}<span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span></div>`;
   return `<div class="lcard${off ? " dim" : ""}${plan ? " has-plan" : ""}" data-lview="${esc(l.id)}" title="点击查看房源详情">
-    <div class="lcard-main"><div class="lrow1"><span>${headParts.join(" · ") || "户型未填"}</span>${l.isFavorite ? '<span class="lfav">★</span>' : ""}</div>
+    <div class="lcard-main"><div class="lrow1"><span>${headParts.join(" · ") || "户型未填"}</span></div>
     <div class="lrow2">${price}</div>
-    <div class="lrow3">${infoParts.join("")}<span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span></div></div>${thumb}
+    <div class="lrow3">${infoParts.join("")}</div></div>${thumb}${rail}
   </div>`;
 }
 let listingsOpen = false;
@@ -1069,6 +1081,7 @@ function rerenderDrawer(h){
   hydrateMedia($("#drawer-scroll"));
 }
 let listingCtx = null;
+let planFormState = null;
 function lfNum(id, label, val, ph){
   return `<div class="fld"><label>${label}</label><input id="${id}" type="number" step="any"${ph ? ` placeholder="${ph}"` : ""} value="${esc(val ?? "")}"></div>`;
 }
@@ -1082,7 +1095,9 @@ function openListingForm(houseId, listingId){
   reopenListingAfterSave = null;
   const h = byId(houseId); if (!h) return;
   const l = listingId ? getListings(h).find(x => String(x.id) === String(listingId)) : null;
-  listingCtx = { houseId, listingId: l ? l.id : null };
+  const planNewId = l ? null : "l" + Date.now() + Math.random().toString(36).slice(2, 6);
+  listingCtx = { houseId, listingId: l ? l.id : null, newId: planNewId };
+  planFormState = { houseId, listingIdForPath: l ? l.id : planNewId, origPlan: getFloorPlan(l), pendingPlan: getFloorPlan(l), uploaded: [], committed: false };
   $("#listing-title").textContent = (l ? "编辑房源" : "添加房源") + " · " + (h.community || "");
   const st = l?.status || "onsale", so = l?.source || "manual";
   const floorTextInit = l ? (l.floorText ? String(l.floorText) : (isSet(l.floor) ? l.floor + "层" : "")) : "";
@@ -1132,17 +1147,52 @@ function openListingForm(houseId, listingId){
     ${lfArea("lf-pros", "优点", l?.pros)}
     ${lfArea("lf-cons", "缺点", l?.cons)}
     ${lfText("lf-agentNote", "中介备注", l?.agentNote, "", true)}
-  </div></section>`;
+  </div></section><section class="fsec"><h4>户型图</h4><div class="lf-plan" id="lf-plan-box"></div></section>`;
   document.querySelectorAll("#listing-form [data-floor-pick]").forEach(b => b.addEventListener("click", () => { const inp = $("#lf-floorText"); inp.value = b.dataset.floorPick; inp.focus(); }));
+  lfPlanRender();
   $("#listing-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 }
 function closeListing(){
+  if (planFormState && !planFormState.committed && planFormState.uploaded.length) removeMediaFiles(planFormState.uploaded.slice());
+  planFormState = null;
   $("#listing-wrap").classList.add("hidden");
   listingCtx = null;
   if (!$("#drawer").classList.contains("open") && $("#edit-wrap").classList.contains("hidden") && $("#cmp-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
 }
 document.querySelectorAll("[data-close-listing]").forEach(el => el.addEventListener("click", closeListing));
+function lfPlanRender(){
+  const box = $("#lf-plan-box"); if (!box || !planFormState) return;
+  const p = planFormState.pendingPlan;
+  if (p) {
+    box.innerHTML = `<img id="lf-plan-img" alt="户型图"><div class="lf-plan-ops"><button type="button" class="btn small" id="lf-plan-up">替换</button><button type="button" class="btn small danger" id="lf-plan-del">删除</button></div>`;
+    signedUrls([p.path]).then(urls => { const img = $("#lf-plan-img"); if (img) { const u = urls.get(p.path); if (u) img.src = u; } });
+  } else {
+    box.innerHTML = `<button type="button" class="btn small" id="lf-plan-up">＋ 上传户型图</button>`;
+  }
+  const up = $("#lf-plan-up");
+  if (up) up.addEventListener("click", () => { const inp = $("#plan-file-form"); inp.value = ""; inp.click(); });
+  const del = $("#lf-plan-del");
+  if (del) del.addEventListener("click", () => { if (!planFormState) return; planFormState.pendingPlan = null; lfPlanRender(); });
+}
+$("#plan-file-form").addEventListener("change", async e => {
+  const file = (e.target.files || [])[0]; e.target.value = "";
+  const st = planFormState; if (!st || !file) return;
+  const h = byId(st.houseId); if (!h) return;
+  const up = $("#lf-plan-up"); if (up) up.disabled = true;
+  let item = null;
+  try { item = await uploadFloorPlanFile(h, { id: st.listingIdForPath }, file); }
+  catch (err) {
+    if (isBucketMissingErr(err)) toast("媒体存储还没初始化，请先在 Supabase 运行 storage.sql");
+    else toast("户型图上传失败：" + err.message);
+    lfPlanRender();
+    return;
+  }
+  if (!item) { lfPlanRender(); return; }
+  st.uploaded.push(item.path);
+  st.pendingPlan = item;
+  lfPlanRender();
+});
 function readListingForm(){
   const num = id => { const v = $("#" + id).value.trim(); return v === "" ? null : Number(v); };
   const l = {
@@ -1184,18 +1234,27 @@ $("#btn-listing-save").addEventListener("click", async () => {
   if (!listingCtx) return;
   const h = byId(listingCtx.houseId); if (!h) return;
   const data = readListingForm();
+  const planSt = planFormState;
+  if (planSt) data.floorPlan = planSt.pendingPlan;
   const oldList = getListings(h);
   let newList;
   if (listingCtx.listingId) {
     const orig = oldList.find(x => String(x.id) === String(listingCtx.listingId)) || {};
     newList = oldList.map(x => String(x.id) === String(listingCtx.listingId) ? { ...orig, ...data } : x);
   } else {
-    newList = [...oldList, { id: "l" + Date.now() + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString(), ...data }];
+    newList = [...oldList, { id: listingCtx.newId || ("l" + Date.now() + Math.random().toString(36).slice(2, 6)), createdAt: new Date().toISOString(), ...data }];
   }
   h.listings = newList;
   $("#btn-listing-save").disabled = true;
   try {
     await dbUpdate(h);
+    if (planSt) {
+      planSt.committed = true;
+      const adopted = planSt.pendingPlan ? planSt.pendingPlan.path : null;
+      const trash = planSt.uploaded.filter(p => p !== adopted);
+      if (planSt.origPlan && planSt.origPlan.path !== adopted) trash.push(planSt.origPlan.path);
+      if (trash.length) removeMediaFiles([...new Set(trash)]);
+    }
     closeListing();
     rerenderDrawer(h);
     if (reopenListingAfterSave && String(reopenListingAfterSave.houseId) === String(h.id)) {
@@ -1292,6 +1351,7 @@ function openListingDetail(houseId, listingId){
   sec("看房与中介", r);
   r = "";
   r += kv("来源", LISTING_SOURCE[l.source] || "");
+  r += kv("贝壳链接", l.url, true);
   r += kv("备注", l.note);
   sec("其他", r);
   body += mediaSectionHTML(l, "l");
