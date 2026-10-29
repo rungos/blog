@@ -221,6 +221,23 @@
   .lop.danger{color:var(--danger); background:var(--danger-soft)}
   .lop.danger:hover{background:#fbe3e3}
   .lempty{font-size:13.5px; color:var(--muted); padding:2px 0 8px}
+  .lsec-head{cursor:pointer; user-select:none; -webkit-user-select:none}
+  .lsec-head .lchev{font-size:11px; color:var(--muted); line-height:1; transition:transform .25s ease; transform:rotate(-90deg)}
+  .lsec-head.open .lchev{transform:rotate(0deg)}
+  .lsec-body{display:grid; grid-template-rows:1fr; transition:grid-template-rows .28s ease}
+  .lsec-body.collapsed{grid-template-rows:0fr}
+  .lsec-inner{overflow:hidden; min-height:0}
+  .dd-cbx{flex:none; width:17px; height:17px; border:1.5px solid #c9cdd4; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; line-height:1; color:#fff; background:#fff}
+  .dd-opt.sel .dd-cbx{background:#111; border-color:#111; color:#fff}
+  .lview{margin-top:10px; padding-top:9px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--muted); display:flex; flex-direction:column; gap:3px}
+  .lview-h{font-weight:600; font-size:12px; letter-spacing:.06em; color:var(--text)}
+  .lview-row{white-space:pre-wrap; word-break:break-word; line-height:1.55}
+  .lview-row a{color:var(--ink); text-decoration:underline}
+  .lcard{cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease}
+  .lcard:hover{border-color:#d9d9d9; box-shadow:0 4px 14px rgba(0,0,0,.06)}
+  .ld-sub{display:flex; align-items:center; gap:8px; padding:2px 0 4px}
+  .ld-sub .lfav{color:var(--gold); font-size:13px; font-weight:600}
+  .modal-foot .btn.danger{color:var(--danger)}
   .lrow3 + .lrow3{margin-top:5px}
   .lfloor-pills{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px}
   .lfloor-pills button{font-size:12px; font-weight:500; color:var(--muted); background:var(--soft); border:none; border-radius:999px; padding:4px 11px; cursor:pointer}
@@ -426,6 +443,21 @@
   </div>
 </div>
 
+<!-- ================= 房源详情弹窗 ================= -->
+<div class="modal-wrap hidden" id="ldetail-wrap">
+  <div class="modal-scrim" data-close-ldetail></div>
+  <div class="modal" style="width:600px">
+    <div class="modal-head"><h2 id="ldetail-title">房源详情</h2><button class="modal-close" data-close-ldetail>✕</button></div>
+    <div class="modal-body" id="ldetail-body"></div>
+    <div class="modal-foot">
+      <button class="btn" data-close-ldetail>关闭</button>
+      <a class="btn hidden" id="ldetail-url" href="#" target="_blank" rel="noopener" style="text-decoration:none">查看贝壳 ↗</a>
+      <button class="btn danger" id="ldetail-del">删除</button>
+      <button class="btn primary" id="ldetail-edit">编辑</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- supabase-js v2 · UMD 构建，挂载全局 supabase.createClient -->
@@ -454,6 +486,13 @@ function priceNumStr(h){
   if (isSet(h.unitPriceMin) && isSet(h.unitPriceMax))
     return h.unitPriceMin === h.unitPriceMax ? fmtNum(h.unitPriceMin) : fmtNum(h.unitPriceMin)+"–"+fmtNum(h.unitPriceMax);
   if (isSet(h.unitPriceMin)) return fmtNum(h.unitPriceMin);
+  return "";
+}
+function totalRangeStr(h){
+  const mn = isSet(h.totalPriceMin), mx = isSet(h.totalPriceMax);
+  if (mn && mx) return fmtNum(h.totalPriceMin) + "–" + fmtNum(h.totalPriceMax) + " 万";
+  if (mn) return fmtNum(h.totalPriceMin) + " 万起";
+  if (mx) return "不高于 " + fmtNum(h.totalPriceMax) + " 万";
   return "";
 }
 function triStr(v){ return v===1||v===true ? "有" : (v===0||v===false ? "无" : ""); }
@@ -672,7 +711,7 @@ function cardHTML(h, showLoc, idx){
     <div class="pin-body">
       <h3>${esc(name)}</h3>
       <div class="pin-loc">${locParts.length ? esc(locParts.join(" · ")) : "&nbsp;"}</div>
-      <div class="pin-price${isRange ? " has-range" : ""}">${hasPrice ? `<span class="pnum num">${esc(priceNumStr(h))}</span><span class="punit">元/㎡</span>` : `<span class="pnone">价格待录入</span>`}<span class="side">${isSet(h.totalPriceNote) ? `<span class="ptotal">${esc(h.totalPriceNote)}</span>` : ""}${h.rating ? `<span class="prate">★ ${h.rating}</span>` : ""}</span></div>
+      <div class="pin-price${isRange ? " has-range" : ""}">${hasPrice ? `<span class="pnum num">${esc(priceNumStr(h))}</span><span class="punit">元/㎡</span>` : `<span class="pnone">价格待录入</span>`}<span class="side">${totalRangeStr(h) ? `<span class="ptotal">${esc(totalRangeStr(h))}</span>` : (isSet(h.totalPriceNote) ? `<span class="ptotal">${esc(h.totalPriceNote)}</span>` : "")}${h.rating ? `<span class="prate">★ ${h.rating}</span>` : ""}</span></div>
     </div>
   </article>`;
 }
@@ -768,7 +807,7 @@ function detailHTML(h){
       <span class="dv-status">${h.status==="viewed"?"已看":"待看"}</span>
       <div class="dv-bottom">
         ${priceNumStr(h) ? `<div class="dv-price num${(isSet(h.unitPriceMin) && isSet(h.unitPriceMax) && h.unitPriceMin !== h.unitPriceMax) ? " range" : ""}">${esc(priceNumStr(h))} <small>元/㎡</small></div>` : ""}
-        ${isSet(h.totalPriceNote) ? `<div class="dv-total">${esc(h.totalPriceNote)}</div>` : ""}
+        ${totalRangeStr(h) ? `<div class="dv-total">${esc(totalRangeStr(h))}</div>` : (isSet(h.totalPriceNote) ? `<div class="dv-total">${esc(h.totalPriceNote)}</div>` : "")}
         ${locLine ? `<div class="dv-loc">${esc(locLine)}</div>` : ""}
       </div>
     </div>
@@ -776,23 +815,23 @@ function detailHTML(h){
       <h2>${esc(name)}</h2>
       <div class="meta-line">
         ${h.rating ? `<span class="stars">${starsStr(h.rating)}</span><span>评分 ${h.rating}/5</span>` : ""}
-        ${h.viewingDate ? `<span>看房 ${esc(h.viewingDate)}</span>` : ""}
       </div>`;
   let s = "";
   s += kv("单价", priceStr(h));
+  s += kv("总价范围", totalRangeStr(h));
+  s += kv("最近成交价", isSet(h.recentDealPrice) ? fmtNum(h.recentDealPrice) + " 万" : "");
   if (isSet(h.histPriceMin) || isSet(h.histPriceMax)) s += kv("历史成交价", `${fmtNum(h.histPriceMin)}–${fmtNum(h.histPriceMax)} 元/㎡`);
-  s += kv("总价备注", h.totalPriceNote);
   s += kv("租售比", h.rentSaleRatio);
   s += kv("成交量", h.transactionVolume);
   if (s) html += `<section class="dsec"><h4>价格</h4>${s}</section>`;
   s = "";
-  s += kv("电梯", triStr(h.hasElevator));
-  s += kv("总楼层", isSet(h.totalFloors) ? h.totalFloors+" 层" : "");
   s += kv("建成年", h.builtYear);
   s += kv("建筑类型", h.buildingType);
   s += kv("楼栋数", isSet(h.totalBuildings) ? h.totalBuildings+" 栋" : "");
   s += kv("总户数", isSet(h.totalHouseholds) ? h.totalHouseholds+" 户" : "");
+  s += kv("电梯", triStr(h.hasElevator));
   s += kv("梯户比", h.elevatorRatio);
+  s += kv("总楼层", isSet(h.totalFloors) ? h.totalFloors+" 层" : "");
   s += kv("容积率/密度", h.density);
   s += kv("绿化", h.greenery);
   s += kv("物业公司", h.propertyCompany);
@@ -835,28 +874,16 @@ function detailHTML(h){
   s += kv("门禁", triStr(h.hasAccessControl));
   s += kv("车位", triStr(h.hasParking));
   s += kv("车位价格", h.parkingPrice);
+  s += kv("供暖类型", h.heatingType);
+  s += kv("用水类型", h.waterType);
+  s += kv("用电类型", h.powerType);
+  s += kv("燃气费用", h.gasFee);
   s += kv("是否临街", triStr(h.isStreetFacing));
   s += kv("附近电厂", triStr(h.hasPowerPlant));
   s += kv("附近垃圾站", triStr(h.hasGarbageStation));
   s += kv("附近高架", triStr(h.nearElevated));
   s += kv("噪音", h.noiseLevel);
-  s += kv("供暖类型", h.heatingType);
-  s += kv("用水类型", h.waterType);
-  s += kv("用电类型", h.powerType);
-  s += kv("燃气费用", h.gasFee);
   if (s) html += `<section class="dsec"><h4>环境与设施</h4>${s}</section>`;
-  s = "";
-  s += kv("看房时间", h.viewingDate);
-  s += kv("看房体验", h.viewingExperience);
-  s += kv("优点", h.pros);
-  s += kv("缺点", h.cons);
-  if (s) html += `<section class="dsec"><h4>看房记录</h4>${s}</section>`;
-  s = "";
-  s += kv("中介", h.agentName);
-  s += kv("电话", h.agentPhone);
-  s += kv("公司", h.agentCompany);
-  s += kv("备注", h.agentNote);
-  if (s) html += `<section class="dsec"><h4>中介</h4>${s}</section>`;
   if (isSet(h.notes)) html += `<section class="dsec"><h4>备注</h4><div class="notes-txt">${linkify(h.notes)}</div></section>`;
   html += `</div>`;
   return html;
@@ -869,6 +896,7 @@ function syncDrawerActions(h){
 function openDetail(id){
   const h = byId(id); if (!h) return;
   detailId = id;
+  listingsOpen = false;
   $("#drawer-scroll").innerHTML = detailHTML(h);
   syncDrawerActions(h);
   $("#drawer-scrim").classList.add("show");
@@ -966,6 +994,7 @@ function listingCardHTML(l){
     l.elevatorRatio ? `<span>${esc(l.elevatorRatio)}</span>` : ""
   ].filter(Boolean).join("");
   const propParts = [];
+  if (l.listingDate) propParts.push("挂牌 " + l.listingDate);
   if (l.registeredDate) propParts.push("登记 " + l.registeredDate);
   if (l.houseType) propParts.push(l.houseType);
   if (l.houseAge) propParts.push(l.houseAge);
@@ -976,13 +1005,26 @@ function listingCardHTML(l){
     `<span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>`,
     LISTING_SOURCE[l.source] ? `<span>${esc(LISTING_SOURCE[l.source])}</span>` : ""
   ].filter(Boolean).join("");
-  return `<div class="lcard${off ? " dim" : ""}">
+  const viewRows = [];
+  if (l.viewingDate) viewRows.push(`<div class="lview-row">看房 ${esc(l.viewingDate)}</div>`);
+  if (l.viewingExperience) viewRows.push(`<div class="lview-row">体验：${esc(l.viewingExperience)}</div>`);
+  if (l.pros) viewRows.push(`<div class="lview-row">优点：${esc(l.pros)}</div>`);
+  if (l.cons) viewRows.push(`<div class="lview-row">缺点：${esc(l.cons)}</div>`);
+  const agParts = [];
+  if (l.agentName) agParts.push(esc(l.agentName));
+  if (l.agentCompany) agParts.push(esc(l.agentCompany));
+  if (l.agentPhone) agParts.push(`<a href="tel:${esc(l.agentPhone)}">${esc(l.agentPhone)}</a>`);
+  if (agParts.length) viewRows.push(`<div class="lview-row">中介：${agParts.join(" · ")}</div>`);
+  if (l.agentNote) viewRows.push(`<div class="lview-row">中介备注：${esc(l.agentNote)}</div>`);
+  const viewBlock = viewRows.length ? `<div class="lview"><div class="lview-h">看房与中介</div>${viewRows.join("")}</div>` : "";
+  return `<div class="lcard${off ? " dim" : ""}" data-lview="${esc(l.id)}" title="点击查看房源详情">
     <div class="lrow1"><span>${headParts.join(" · ") || "户型未填"}</span>${l.isFavorite ? '<span class="lfav">★</span>' : ""}</div>
     <div class="lrow2">${price}</div>
     ${rowA ? `<div class="lrow3">${rowA}</div>` : ""}
     <div class="lrow3">${rowB}</div>
     ${propParts.length ? `<div class="lrow3"><span>${propParts.map(esc).join(" · ")}</span></div>` : ""}
     ${l.note ? `<div class="lnote">${esc(l.note)}</div>` : ""}
+    ${viewBlock}
     <div class="lops">
       ${l.url ? `<a class="lop" href="${esc(l.url)}" target="_blank" rel="noopener">查看贝壳 ↗</a>` : ""}
       <button type="button" class="lop" data-ledit="${esc(l.id)}">编辑</button>
@@ -990,11 +1032,12 @@ function listingCardHTML(l){
     </div>
   </div>`;
 }
+let listingsOpen = false;
 function listingsSectionHTML(h){
   const list = sortedListings(h);
-  return `<section class="dsec">
-    <div class="lsec-head"><h4>房源</h4><span class="lcnt">${list.length} 套</span><button type="button" class="btn small primary" data-ladd>＋ 加一套</button></div>
-    ${list.length ? list.map(listingCardHTML).join("") : `<div class="lempty">暂无房源</div>`}
+  return `<section class="dsec lsec">
+    <div class="lsec-head${listingsOpen ? " open" : ""}" data-ltoggle title="点击展开/收起房源"><h4>房源</h4><span class="lcnt">${list.length} 套</span><span class="lchev">▾</span><button type="button" class="btn small primary" data-ladd>＋ 加一套</button></div>
+    <div class="lsec-body${listingsOpen ? "" : " collapsed"}"><div class="lsec-inner">${list.length ? list.map(listingCardHTML).join("") : `<div class="lempty">暂无房源</div>`}</div></div>
   </section>`;
 }
 function rerenderDrawer(h){
@@ -1013,7 +1056,11 @@ function lfNum(id, label, val, ph){
 function lfText(id, label, val, ph, full){
   return `<div class="fld${full ? " full" : ""}"><label>${label}</label><input id="${id}" type="text"${ph ? ` placeholder="${ph}"` : ""} value="${esc(val ?? "")}"></div>`;
 }
+function lfArea(id, label, val, ph){
+  return `<div class="fld full"><label>${label}</label><textarea id="${id}" rows="2"${ph ? ` placeholder="${ph}"` : ""}>${esc(val ?? "")}</textarea></div>`;
+}
 function openListingForm(houseId, listingId){
+  reopenListingAfterSave = null;
   const h = byId(houseId); if (!h) return;
   const l = listingId ? getListings(h).find(x => String(x.id) === String(listingId)) : null;
   listingCtx = { houseId, listingId: l ? l.id : null };
@@ -1023,6 +1070,7 @@ function openListingForm(houseId, listingId){
   $("#listing-form").innerHTML = `<section class="fsec"><div class="fgrid">
     ${lfNum("lf-rooms", "室", l?.rooms)}${lfNum("lf-halls", "厅", l?.halls)}
     ${lfNum("lf-baths", "卫", l?.baths)}${lfNum("lf-areaSqm", "面积（㎡）", l?.areaSqm)}
+    <div class="fld"><label>挂牌日期</label><input id="lf-listingDate" type="date" value="${esc(l?.listingDate || "")}"></div>
     ${lfNum("lf-totalPriceWan", "总价（万）", l?.totalPriceWan)}${lfNum("lf-unitPrice", "单价（元/㎡）", l?.unitPrice, "留空按总价÷面积算")}
     ${lfText("lf-orientation", "朝向", l?.orientation, "如 南北")}
     ${lfText("lf-sunlight", "日照时间", l?.sunlight, "如：全天日照、约4小时、仅上午")}
@@ -1056,6 +1104,15 @@ function openListingForm(houseId, listingId){
     <div class="fld"><label>房屋年限</label><select id="lf-houseAge">${selOpts("houseAge", l?.houseAge || "")}</select></div>
     <div class="fld"><label>产权所属</label><select id="lf-ownership">${selOpts("ownership", l?.ownership || "")}</select></div>
     <div class="fld"><label>抵押信息</label><select id="lf-mortgage">${selOpts("mortgage", l?.mortgage || "")}</select></div>
+  </div></section><section class="fsec"><h4>看房与中介</h4><div class="fgrid">
+    <div class="fld"><label>看房日期</label><input id="lf-viewingDate" type="date" value="${esc(l?.viewingDate || "")}"></div>
+    ${lfText("lf-agentName", "中介姓名", l?.agentName)}
+    ${lfText("lf-agentCompany", "中介公司", l?.agentCompany)}
+    ${lfText("lf-agentPhone", "中介电话", l?.agentPhone)}
+    ${lfArea("lf-viewingExperience", "看房体验", l?.viewingExperience)}
+    ${lfArea("lf-pros", "优点", l?.pros)}
+    ${lfArea("lf-cons", "缺点", l?.cons)}
+    ${lfText("lf-agentNote", "中介备注", l?.agentNote, "", true)}
   </div></section>`;
   document.querySelectorAll("#listing-form [data-floor-pick]").forEach(b => b.addEventListener("click", () => { const inp = $("#lf-floorText"); inp.value = b.dataset.floorPick; inp.focus(); }));
   $("#listing-wrap").classList.remove("hidden");
@@ -1090,7 +1147,16 @@ function readListingForm(){
     houseType: $("#lf-houseType").value,
     houseAge: $("#lf-houseAge").value,
     ownership: $("#lf-ownership").value,
-    mortgage: $("#lf-mortgage").value
+    mortgage: $("#lf-mortgage").value,
+    listingDate: $("#lf-listingDate").value,
+    viewingDate: $("#lf-viewingDate").value,
+    viewingExperience: $("#lf-viewingExperience").value.trim(),
+    pros: $("#lf-pros").value.trim(),
+    cons: $("#lf-cons").value.trim(),
+    agentName: $("#lf-agentName").value.trim(),
+    agentPhone: $("#lf-agentPhone").value.trim(),
+    agentCompany: $("#lf-agentCompany").value.trim(),
+    agentNote: $("#lf-agentNote").value.trim()
   };
   if (l.unitPrice === null && l.totalPriceWan !== null && l.areaSqm) l.unitPrice = Math.round(l.totalPriceWan * 10000 / l.areaSqm);
   return l;
@@ -1113,6 +1179,10 @@ $("#btn-listing-save").addEventListener("click", async () => {
     await dbUpdate(h);
     closeListing();
     rerenderDrawer(h);
+    if (reopenListingAfterSave && String(reopenListingAfterSave.houseId) === String(h.id)) {
+      const rc = reopenListingAfterSave; reopenListingAfterSave = null;
+      if (getListings(h).some(x => String(x.id) === String(rc.listingId))) openListingDetail(rc.houseId, rc.listingId);
+    }
     renderStats(); renderList();
     toast("房源已保存");
   } catch (err) {
@@ -1136,12 +1206,116 @@ async function deleteListing(houseId, listingId){
     toast("删除失败：" + err.message);
   }
 }
+/* ==================== 房源详情弹窗 ==================== */
+let ldetailCtx = null;
+let reopenListingAfterSave = null;
+function listingLayoutStr(l){
+  const parts = [];
+  if (isSet(l.rooms)) parts.push(l.rooms + "室");
+  if (isSet(l.halls)) parts.push(l.halls + "厅");
+  if (isSet(l.baths)) parts.push(l.baths + "卫");
+  return parts.join("");
+}
+function listingFloorStr(l){
+  const label = l.floorText ? String(l.floorText) : (isSet(l.floor) ? l.floor + "层" : "");
+  if (label && isSet(l.totalFloors)) return label + " · 共" + l.totalFloors + "层";
+  if (label) return label;
+  if (isSet(l.totalFloors)) return "共" + l.totalFloors + "层";
+  return "";
+}
+function openListingDetail(houseId, listingId){
+  const h = byId(houseId); if (!h) return;
+  const l = getListings(h).find(x => String(x.id) === String(listingId)); if (!l) return;
+  ldetailCtx = { houseId, listingId: l.id };
+  const layout = listingLayoutStr(l);
+  $("#ldetail-title").textContent = (h.community || "房源详情") + (layout ? " · " + layout : "");
+  const off = l.status === "stopped" || l.status === "sold";
+  let body = `<div class="ld-sub"><span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>${l.isFavorite ? '<span class="lfav">★ 重点关注</span>' : ""}</div>`;
+  const sec = (title, rows) => { if (rows) body += `<section class="dsec"><h4>${title}</h4>${rows}</section>`; };
+  let r = "";
+  r += kv("户型", layout);
+  r += kv("面积", isSet(l.areaSqm) ? l.areaSqm + " ㎡" : "");
+  r += kv("朝向", l.orientation);
+  r += kv("日照时间", l.sunlight);
+  r += kv("楼层", listingFloorStr(l));
+  r += kv("是否有电梯", triStr(l.hasElevator));
+  r += kv("梯户比例", l.elevatorRatio);
+  r += kv("装修", l.decoration);
+  r += kv("房屋类型", l.houseType);
+  sec("基本", r);
+  r = "";
+  r += kv("总价", isSet(l.totalPriceWan) ? fmtNum(l.totalPriceWan) + " 万" : "");
+  r += kv("单价", isSet(l.unitPrice) ? fmtNum(l.unitPrice) + " 元/㎡" : "");
+  r += kv("挂牌日期", l.listingDate);
+  sec("价格", r);
+  r = "";
+  r += kv("登记日期", l.registeredDate);
+  r += kv("房屋年限", l.houseAge);
+  r += kv("产权所属", l.ownership);
+  r += kv("抵押信息", l.mortgage);
+  sec("产权与登记", r);
+  r = "";
+  r += kv("看房日期", l.viewingDate);
+  r += kv("看房体验", l.viewingExperience);
+  r += kv("优点", l.pros);
+  r += kv("缺点", l.cons);
+  const ag = [];
+  if (l.agentName) ag.push(esc(l.agentName));
+  if (l.agentCompany) ag.push(esc(l.agentCompany));
+  if (l.agentPhone) ag.push(`<a href="tel:${esc(l.agentPhone)}">${esc(l.agentPhone)}</a>`);
+  if (ag.length) r += `<div class="kv"><div class="k">中介</div><div class="v">${ag.join(" · ")}</div></div>`;
+  r += kv("中介备注", l.agentNote);
+  sec("看房与中介", r);
+  r = "";
+  r += kv("来源", LISTING_SOURCE[l.source] || "");
+  r += kv("备注", l.note);
+  sec("其他", r);
+  $("#ldetail-body").innerHTML = body;
+  const urlBtn = $("#ldetail-url");
+  if (l.url) { urlBtn.href = l.url; urlBtn.classList.remove("hidden"); } else { urlBtn.removeAttribute("href"); urlBtn.classList.add("hidden"); }
+  $("#ldetail-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
+function closeListingDetail(){
+  $("#ldetail-wrap").classList.add("hidden");
+  ldetailCtx = null;
+  if (!$("#drawer").classList.contains("open") && $("#edit-wrap").classList.contains("hidden") && $("#cmp-wrap").classList.contains("hidden") && $("#listing-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+document.querySelectorAll("[data-close-ldetail]").forEach(el => el.addEventListener("click", closeListingDetail));
+$("#ldetail-edit").addEventListener("click", () => {
+  if (!ldetailCtx) return;
+  const ctx = { ...ldetailCtx };
+  closeListingDetail();
+  openListingForm(ctx.houseId, ctx.listingId);
+  reopenListingAfterSave = ctx;
+});
+$("#ldetail-del").addEventListener("click", async () => {
+  if (!ldetailCtx) return;
+  const ctx = { ...ldetailCtx };
+  await deleteListing(ctx.houseId, ctx.listingId);
+  const h = byId(ctx.houseId);
+  if (!h || !getListings(h).some(x => String(x.id) === String(ctx.listingId))) closeListingDetail();
+});
 $("#drawer-scroll").addEventListener("click", e => {
   if (e.target.closest("[data-ladd]")) { if (detailId) openListingForm(detailId, null); return; }
   const ed = e.target.closest("[data-ledit]");
   if (ed) { openListingForm(detailId, ed.dataset.ledit); return; }
   const del = e.target.closest("[data-ldel]");
   if (del) { deleteListing(detailId, del.dataset.ldel); return; }
+  const lv = e.target.closest("[data-lview]");
+  if (lv) {
+    if (e.target.closest("a, button")) return;
+    if (detailId) openListingDetail(detailId, lv.dataset.lview);
+    return;
+  }
+  const tg = e.target.closest("[data-ltoggle]");
+  if (tg) {
+    listingsOpen = !listingsOpen;
+    const body = tg.parentElement ? tg.parentElement.querySelector(".lsec-body") : null;
+    if (body) body.classList.toggle("collapsed", !listingsOpen);
+    tg.classList.toggle("open", listingsOpen);
+    return;
+  }
 });
 
 /* ==================== 对比 ==================== */
@@ -1151,9 +1325,7 @@ const CMP_FIELDS = [
   ["评分", h => h.rating ? h.rating+"/5" : ""],
   ["单价", h => priceStr(h)],
   ["历史成交价", h => (isSet(h.histPriceMin)||isSet(h.histPriceMax)) ? fmtNum(h.histPriceMin)+"–"+fmtNum(h.histPriceMax) : ""],
-  ["总价备注", h => h.totalPriceNote||""],
-  ["户型", h => h.layout||""],
-  ["面积", h => isSet(h.areaSqm)?h.areaSqm+" ㎡":""],
+  ["总价", h => totalRangeStr(h) || h.totalPriceNote || ""],
   ["电梯", h => triStr(h.hasElevator)],
   ["总楼层", h => isSet(h.totalFloors)?h.totalFloors+"":""],
   ["建成年", h => h.builtYear||""],
@@ -1167,9 +1339,7 @@ const CMP_FIELDS = [
   ["物业费", h => h.propertyFee||""],
   ["车位", h => triStr(h.hasParking)],
   ["密度", h => h.density||""],
-  ["绿化", h => h.greenery||""],
-  ["优点", h => h.pros||""],
-  ["缺点", h => h.cons||""]
+  ["绿化", h => h.greenery||""]
 ];
 function renderCompare(){
   const list = [...compareSet].map(byId).filter(Boolean);
@@ -1187,7 +1357,7 @@ function renderCompare(){
 }
 
 /* ==================== 编辑表单 ==================== */
-// type: text | num | area(textarea) | tri(三态 有/无/未知) | status | sel(下拉，选项见 SELECT_OPTIONS)
+// type: text | num | area(textarea) | tri(三态 有/无/未知) | status | sel(下拉，选项见 SELECT_OPTIONS) | msel(多选，、连接，仅建筑类型)
 const FORM_SECTIONS = [
   ["基本", [
     ["status","状态","status"], ["community","小区名","text"], ["city","城市","text"],
@@ -1195,15 +1365,16 @@ const FORM_SECTIONS = [
   ]],
   ["价格", [
     ["unitPriceMin","单价下限（元/㎡）","num"], ["unitPriceMax","单价上限（元/㎡）","num"],
+    ["totalPriceMin","总价下限（万）","num"], ["totalPriceMax","总价上限（万）","num"],
+    ["recentDealPrice","最近成交价（万）","num"],
     ["histPriceMin","历史成交价下限","num"], ["histPriceMax","历史成交价上限","num"],
-    ["totalPriceNote","总价备注","text"], ["rentSaleRatio","租售比","text"], ["transactionVolume","成交量","text"]
+    ["rentSaleRatio","租售比","text"], ["transactionVolume","成交量","text"]
   ]],
   ["房屋与小区", [
-    ["layout","户型","text"], ["areaSqm","面积（㎡）","num"],
-    ["hasElevator","电梯","tri"], ["totalFloors","总楼层","num"],
-    ["builtYear","建成年","num"], ["buildingType","建筑类型","sel"],
+    ["builtYear","建成年","num"], ["buildingType","建筑类型","msel"],
     ["totalBuildings","楼栋数","num"], ["totalHouseholds","总户数","num"],
-    ["elevatorRatio","梯户比（如 一梯两户/步梯）","text"],
+    ["hasElevator","电梯","tri"], ["elevatorRatio","梯户比（如 一梯两户/步梯）","text"],
+    ["totalFloors","总楼层","num"],
     ["density","容积率/密度","text"], ["greenery","绿化","text"],
     ["propertyCompany","物业公司","text"], ["propertyFee","物业费","text"], ["industrialPark","附近产业园","text"]
   ]],
@@ -1221,16 +1392,10 @@ const FORM_SECTIONS = [
   ]],
   ["环境与设施", [
     ["hasAccessControl","门禁","tri"], ["hasParking","车位","tri"], ["parkingPrice","车位价格","text"],
-    ["isStreetFacing","是否临街","tri"], ["hasPowerPlant","附近电厂","tri"],
-    ["hasGarbageStation","附近垃圾站","tri"], ["nearElevated","附近高架","tri"], ["noiseLevel","噪音","text"],
     ["heatingType","供暖类型","sel"], ["waterType","用水类型","sel"], ["powerType","用电类型","sel"],
-    ["gasFee","燃气费用","text","如：2.63 元/m³；无燃气填 无"]
-  ]],
-  ["看房与中介", [
-    ["viewingDate","看房时间","text"], ["viewingExperience","看房体验","area"],
-    ["pros","优点","area"], ["cons","缺点","area"],
-    ["agentName","中介姓名","text"], ["agentPhone","中介电话","text"],
-    ["agentCompany","中介公司","text"], ["agentNote","中介备注","text"]
+    ["gasFee","燃气费用","text","如：2.63 元/m³；无燃气填 无"],
+    ["isStreetFacing","是否临街","tri"], ["hasPowerPlant","附近电厂","tri"],
+    ["hasGarbageStation","附近垃圾站","tri"], ["nearElevated","附近高架","tri"], ["noiseLevel","噪音","text"]
   ]]
 ];
 const AMEN_FIELDS = [["hospitals","医院"],["schools","学校"],["markets","菜市场"],["malls","商场"],["parks","公园"]];
@@ -1250,6 +1415,10 @@ function fieldInput(key, label, type, val, ph){
   }
   if (type === "area")
     return `<div class="fld full"><label>${label}</label><textarea id="ef-${key}">${esc(val)}</textarea></div>`;
+  if (type === "msel") {
+    const cur = String(val ?? "");
+    return `<div class="fld"><label>${label}</label><span class="dd-wrap dd-form msel-wrap"><input type="hidden" id="ef-${key}" data-msel="${key}" value="${esc(cur)}"><button type="button" class="dd-btn" data-msel-btn aria-haspopup="listbox" aria-expanded="false"><span class="dd-label">${esc(cur) || "未知"}</span><span class="dd-chev">${DD_CHEV}</span></button></span></div>`;
+  }
   if (type === "sel")
     return `<div class="fld"><label>${label}</label><select id="ef-${key}">${selOpts(key, val)}</select></div>`;
   return `<div class="fld"><label>${label}</label><input id="ef-${key}" type="${type==="num"?"number":"text"}" step="any"${ph ? ` placeholder="${esc(ph)}"` : ""} value="${esc(val)}"></div>`;
@@ -1357,6 +1526,40 @@ $("#btn-save").addEventListener("click", async () => {
 });
 
 /* ==================== 导入 houses.json ==================== */
+/* 导入合并（纯函数）：以 App 现有数据为最新事实，导入 JSON 只补空缺——
+   标量字段：existing 非空一律保留，仅 existing 为空（null/undefined/''）且 imported 非空时才填入（0 与 false 是有效值，不算空）；
+   数组字段（配套等）：existing 空数组/缺失且 imported 非空才整体取 imported，不做元素级合并；
+   listings：按 id 合并，existing 顺序为基准，同 id 逐字段 fill-empty（existing 房源为底，新 id 追加到末尾，手加的原样保留）。 */
+function isEmptyVal(v){ return v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0); }
+function mergeForImport(existing, imported){
+  if (!existing) return imported;
+  const result = { ...existing };
+  for (const [k, v] of Object.entries(imported)) {
+    if (k === "listings") continue;
+    if (isEmptyVal(result[k]) && !isEmptyVal(v)) result[k] = v;
+  }
+  const exList = Array.isArray(existing.listings) ? existing.listings : [];
+  const imList = Array.isArray(imported.listings) ? imported.listings : [];
+  if (exList.length || imList.length) {
+    const imById = new Map();
+    for (const l of imList) if (l && l.id !== null && l.id !== undefined) imById.set(String(l.id), l);
+    const seen = new Set();
+    const merged = exList.map(ex => {
+      if (!ex || ex.id === null || ex.id === undefined) return ex;
+      const key = String(ex.id); seen.add(key);
+      const imp = imById.get(key);
+      if (!imp) return ex;
+      const m = { ...imp };
+      for (const [k, v] of Object.entries(ex)) if (!isEmptyVal(v)) m[k] = v;
+      return m;
+    });
+    for (const imp of imList) {
+      if (imp && (imp.id === null || imp.id === undefined || !seen.has(String(imp.id)))) merged.push(imp);
+    }
+    result.listings = merged;
+  }
+  return result;
+}
 function triggerImport(){ $("#import-file").click(); }
 $("#btn-import").addEventListener("click", triggerImport);
 $("#import-file").addEventListener("change", async (e) => {
@@ -1366,10 +1569,11 @@ $("#import-file").addEventListener("change", async (e) => {
   try { arr = JSON.parse(await file.text()); }
   catch { toast("文件不是合法 JSON"); return; }
   if (!Array.isArray(arr) || !arr.length || arr.some(r => !r || !isSet(r.id))) { toast("JSON 格式不对：应为带 id 的记录数组"); return; }
-  const { data: existing, error } = await sb.from("houses").select("app_id");
+  const { data: existing, error } = await sb.from("houses").select("app_id, data");
   if (error) { toast("导入前查询失败：" + error.message); return; }
-  const existIds = new Set((existing||[]).map(r => Number(r.app_id)));
-  if (existIds.size > 0 && !confirm(`表中已有 ${existIds.size} 条数据。导入将按 id 合并：同 id 更新、新 id 新增（不会删除已有数据）。继续？`)) return;
+  const existingMap = new Map((existing||[]).map(r => [Number(r.app_id), r.data]));
+  const existIds = new Set(existingMap.keys());
+  if (existIds.size > 0 && !confirm(`表中已有 ${existIds.size} 条数据。导入将按 id 合并：新 id 新增；已有记录只补空缺字段，不覆盖你在 App 里的修改，手加的房源也不会丢。继续？`)) return;
   const toInsert = arr.filter(r => !existIds.has(Number(r.id)));
   const toUpdate = arr.filter(r => existIds.has(Number(r.id)));
   try {
@@ -1378,8 +1582,8 @@ $("#import-file").addEventListener("change", async (e) => {
       const { error: ie } = await sb.from("houses").insert(chunk);
       if (ie) throw ie;
     }
-    for (const r of toUpdate) await dbUpdate(r);
-    toast(`导入完成：新增 ${toInsert.length} 条，更新 ${toUpdate.length} 条`);
+    for (const r of toUpdate) await dbUpdate(mergeForImport(existingMap.get(Number(r.id)), r));
+    toast(`导入完成：新增 ${toInsert.length} 条，更新 ${toUpdate.length} 条（只补空缺，手改、手加内容未覆盖）`);
     loadHouses();
   } catch(err) { toast("导入失败：" + err.message); }
 });
@@ -1388,7 +1592,8 @@ $("#import-file").addEventListener("change", async (e) => {
 /* ==================== 全局按键 / 启动 ==================== */
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if (!$("#listing-wrap").classList.contains("hidden")) closeListing();
+  if (!$("#ldetail-wrap").classList.contains("hidden")) closeListingDetail();
+  else if (!$("#listing-wrap").classList.contains("hidden")) closeListing();
   else if (!$("#edit-wrap").classList.contains("hidden")) closeEdit();
   else if (!$("#cmp-wrap").classList.contains("hidden")) closeCompare();
   else if ($("#drawer").classList.contains("open")) closeDrawer();
@@ -1489,11 +1694,83 @@ function enhanceSelect(sel){
 function enhanceSelects(root){
   (root || document).querySelectorAll("select:not([data-dd])").forEach(enhanceSelect);
 }
+/* 多选（建筑类型专用）：按钮+勾选面板，点选项只切换不关闭，值以「、」连接存回隐藏 input */
+function enhanceMultiSelect(input){
+  if (!input || input.dataset.msenh) return;
+  const wrap = input.closest(".msel-wrap");
+  const btn = wrap ? wrap.querySelector("[data-msel-btn]") : null;
+  if (!btn) return;
+  input.dataset.msenh = "1";
+  const key = input.dataset.msel;
+  const opts = (SELECT_OPTIONS[key] || []).filter(v => v !== "");
+  const labelEl = btn.querySelector(".dd-label");
+  const selected = new Set(String(input.value || "").split("、").map(x => x.trim()).filter(Boolean));
+  const panel = document.createElement("div");
+  panel.className = "dd-panel";
+  panel.setAttribute("role", "listbox");
+  panel.setAttribute("aria-multiselectable", "true");
+  const writeBack = () => {
+    const ordered = opts.filter(v => selected.has(v));
+    const extras = [...selected].filter(v => !opts.includes(v));
+    input.value = [...ordered, ...extras].join("、");
+    labelEl.textContent = input.value || "未知";
+    btn.title = input.value;
+  };
+  const buildPanel = () => {
+    panel.innerHTML = opts.map(v => `<div class="dd-opt${selected.has(v) ? " sel" : ""}" role="option" aria-selected="${selected.has(v)}" data-v="${esc(v)}"><span class="dd-cbx">${selected.has(v) ? "✓" : ""}</span><span class="dd-txt">${esc(v)}</span></div>`).join("");
+  };
+  const closeThis = () => {
+    panel.classList.remove("open");
+    btn.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+    if (openDD && openDD.btn === btn) openDD = null;
+    if (panel.parentNode) panel.parentNode.removeChild(panel);
+  };
+  const openThis = () => {
+    if (openDD && openDD.btn !== btn) ddCloseCurrent();
+    buildPanel();
+    document.body.appendChild(panel);
+    const r = btn.getBoundingClientRect();
+    panel.style.width = Math.max(r.width, 180) + "px";
+    panel.style.left = "0px"; panel.style.top = "0px";
+    const ph = panel.offsetHeight, pw = panel.offsetWidth;
+    let left = Math.min(r.left, window.innerWidth - pw - 8);
+    if (left < 8) left = 8;
+    const below = window.innerHeight - r.bottom;
+    let top, above = false;
+    if (below >= ph + 10 || below >= r.top) top = r.bottom + 6;
+    else { top = r.top - ph - 6; above = true; }
+    panel.classList.toggle("above", above);
+    panel.style.left = left + "px";
+    panel.style.top = Math.max(top, 8) + "px";
+    openDD = { sel: input, btn, panel, close: closeThis };
+    requestAnimationFrame(() => {
+      panel.classList.add("open");
+      btn.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+    });
+  };
+  btn.addEventListener("click", () => { (openDD && openDD.btn === btn) ? closeThis() : openThis(); });
+  panel.addEventListener("click", e => {
+    const row = e.target.closest(".dd-opt");
+    if (!row) return;
+    const v = row.dataset.v;
+    if (selected.has(v)) selected.delete(v); else selected.add(v);
+    writeBack();
+    buildPanel();
+  });
+  writeBack();
+}
+function enhanceMultiSelects(root){
+  (root || document).querySelectorAll("input[data-msel]:not([data-msenh])").forEach(enhanceMultiSelect);
+}
 enhanceSelects(document);
-/* 表单等动态生成的 select 出现时自动增强 */
-new MutationObserver(() => enhanceSelects(document)).observe(document.body, { childList: true, subtree: true });
+enhanceMultiSelects(document);
+/* 表单等动态生成的 select / 多选出现时自动增强 */
+new MutationObserver(() => { enhanceSelects(document); enhanceMultiSelects(document); }).observe(document.body, { childList: true, subtree: true });
 document.addEventListener("click", e => {
-  if (openDD && !openDD.panel.contains(e.target) && !openDD.btn.contains(e.target)) ddCloseCurrent();
+  const cpath = e.composedPath ? e.composedPath() : [];
+  if (openDD && !cpath.includes(openDD.panel) && !cpath.includes(openDD.btn)) ddCloseCurrent();
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && openDD) { e.stopPropagation(); ddCloseCurrent(); }
