@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>看房记录</title>
+<title>栖居</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23111111'/><path d='M32 13 L53 31 H48 V47 a3 3 0 0 1 -3 3 H19 a3 3 0 0 1 -3 -3 V31 H11 Z' fill='white'/><rect x='28' y='38' width='8' height='12' rx='1.5' fill='%23111111'/></svg>">
 <style>
   :root{
     --bg:#FAFAFA; --surface:#ffffff;
@@ -48,7 +49,7 @@
   /* ---------- login ---------- */
   #view-login{min-height:100dvh; display:flex; align-items:center; justify-content:center; background:#FAFAFA; padding:24px}
   .login-box{width:100%; max-width:360px; text-align:center}
-  .login-dot{width:14px; height:14px; border-radius:50%; background:var(--red); margin:0 auto 16px}
+  .login-emoji{font-size:28px; line-height:1; margin:0 auto 14px}
   .login-box h1{font-size:28px; font-weight:700; color:var(--ink); margin:0}
   .login-box form{text-align:left; margin-top:26px}
   .login-box label{display:block; font-size:13px; font-weight:600; color:var(--ink); margin:16px 0 7px}
@@ -59,7 +60,7 @@
   .topbar{position:sticky; top:0; z-index:50; background:rgba(255,255,255,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid #f1f1f1}
   .tb-inner{max-width:1560px; margin:0 auto; display:flex; align-items:center; gap:18px; padding:12px 28px}
   .brand{display:flex; align-items:center; gap:8px; font-size:19px; font-weight:800; color:var(--ink); white-space:nowrap}
-  .brand .dot{width:11px; height:11px; border-radius:50%; background:var(--red); flex:none}
+  .brand .logo-emoji{font-size:20px; line-height:1; flex:none}
   .search-box{flex:1; max-width:620px; margin:0 auto; position:relative}
   .search-box input{height:48px; border-radius:999px; background:var(--soft); border:1.5px solid transparent; padding:0 18px 0 44px; font-size:15px}
   .search-box input:focus{background:#fff; border-color:transparent; box-shadow:0 0 0 2px rgba(17,17,17,.65)}
@@ -93,13 +94,12 @@
   .group-head .cnt{font-size:13px; font-weight:500; color:var(--muted)}
   .group-head .chev{margin-left:auto; color:#c4c4c4; font-size:14px; transition:transform .18s ease}
   .group-head.closed .chev{transform:rotate(-90deg)}
-  .masonry{columns:3; column-gap:20px}
-  @media (min-width:1600px){ .masonry{columns:4} }
-  @media (max-width:1099px){ .masonry{columns:2} }
-  .hcard{display:block; width:100%; margin:0 0 20px; break-inside:avoid; background:var(--surface); border-radius:24px; overflow:hidden; box-shadow:var(--shadow-card); cursor:pointer; transition:transform .2s ease, box-shadow .2s ease; animation:fadeUp .4s ease backwards; animation-delay:var(--d,0ms)}
+  .masonry{display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:stretch}
+  @media (max-width:1099px){ .masonry{grid-template-columns:repeat(2,1fr)} }
+  .hcard{display:flex; flex-direction:column; height:100%; background:var(--surface); border-radius:24px; overflow:hidden; box-shadow:var(--shadow-card); cursor:pointer; transition:transform .2s ease, box-shadow .2s ease; animation:fadeUp .4s ease backwards; animation-delay:var(--d,0ms)}
   .hcard:hover{transform:scale(1.01); box-shadow:var(--shadow-hover)}
   @keyframes fadeUp{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
-  .pin-cover{position:relative}
+  .pin-cover{position:relative; height:168px; flex:none}
   .pin-cover .band-char{position:absolute; left:16px; bottom:4px; font-size:62px; font-weight:800; color:rgba(255,255,255,.40); line-height:1}
   .g0{background:linear-gradient(135deg,#a5b4fc,#c4b5fd)} .g1{background:linear-gradient(135deg,#c4b5fd,#f0abfc)}
   .g2{background:linear-gradient(135deg,#7dd3fc,#a5b4fc)} .g3{background:linear-gradient(135deg,#6ee7b7,#5eead4)}
@@ -111,10 +111,11 @@
   .cmp-btn{position:absolute; right:12px; bottom:12px; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.94); color:#111; font-size:15px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.14); opacity:0; transform:scale(.85); transition:all .15s ease; z-index:2}
   .hcard:hover .cmp-btn{opacity:1; transform:none}
   .cmp-btn.on{opacity:1; transform:none; background:var(--red); color:#fff}
-  .pin-body{padding:14px 16px 16px}
-  .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .pin-loc{color:var(--muted); font-size:13px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .pin-price{display:flex; align-items:baseline; gap:4px; margin-top:8px}
+  .pin-body{padding:14px 16px 16px; display:flex; flex-direction:column; flex:1}
+  .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:22px; height:22px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pin-loc{color:var(--muted); font-size:13px; line-height:20px; height:20px; flex:none; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pin-price{display:flex; align-items:baseline; gap:4px; margin-top:8px; height:26px; flex:none}
+  .pin-price .pnone{font-size:13.5px; color:var(--muted)}
   .pin-price .pnum{font-size:18px; font-weight:800; color:var(--ink)}
   .pin-price .punit{font-size:12px; color:var(--muted); flex:none}
   .pin-price .side{margin-left:auto; display:flex; align-items:baseline; gap:8px; min-width:0}
@@ -218,8 +219,9 @@
     .title-row h1{font-size:25px}
     .group{margin-top:26px}
     .group-head .t{font-size:17.5px}
-    .masonry{columns:2; column-gap:12px}
-    .hcard{margin-bottom:12px; border-radius:18px}
+    .masonry{grid-template-columns:repeat(2,1fr); gap:12px}
+    .hcard{border-radius:18px}
+    .pin-cover{height:128px}
     .pin-body{padding:11px 12px 13px}
     .pin-body h3{font-size:14.5px}
     .pin-price .pnum{font-size:16px}
@@ -248,8 +250,8 @@
 <!-- ================= 登录 ================= -->
 <div id="view-login">
   <div class="login-box">
-    <div class="login-dot"></div>
-    <h1>看房记录</h1>
+    <div class="login-emoji"><svg width="66" height="66" viewBox="0 0 64 64" role="img" aria-label="栖居 logo"><defs><linearGradient id="lgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b2b2b"/><stop offset="1" stop-color="#050505"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#lgrad)"/><path d="M17 32.5 L32 19.5 L47 32.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22.5 29.5 V43.5 a2.5 2.5 0 0 0 2.5 2.5 h14 a2.5 2.5 0 0 0 2.5-2.5 V29.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round"/><rect x="29" y="36.5" width="6" height="9.5" rx="3" fill="#E60023"/></svg></div>
+    <h1>栖居</h1>
     <form id="login-form">
       <label for="login-email">邮箱</label>
       <input id="login-email" type="email" autocomplete="username" required>
@@ -266,7 +268,7 @@
 <div id="view-app" class="hidden">
   <header class="topbar">
     <div class="tb-inner">
-      <div class="brand"><span class="dot"></span>看房记录</div>
+      <div class="brand"><span class="logo-emoji">🏠</span>栖居</div>
       <div class="search-box"><span class="ic">⌕</span><input id="search" type="search" placeholder="搜小区名 / 区 / 板块 / 备注"></div>
       <div class="tb-actions">
         <button class="btn" id="btn-import">导入</button>
@@ -566,12 +568,6 @@ function filteredHouses(){
   if (f.q) list = list.filter(h => (h.community||"").includes(f.q) || (h.notes||"").includes(f.q) || (h.district||"").includes(f.q) || (h.sector||"").includes(f.q));
   return list;
 }
-function coverH(h){
-  const s = String(h.community || "") + "|" + String(h.unitPriceMin ?? "");
-  let n = 0;
-  for (let i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0;
-  return [150, 180, 210][n % 3];
-}
 function cardHTML(h, showLoc, idx){
   const name = h.community || "（未命名）";
   const locParts = [];
@@ -583,7 +579,7 @@ function cardHTML(h, showLoc, idx){
   const inCmp = compareSet.has(h.id);
   const hasPrice = !!priceNumStr(h);
   return `<article class="hcard" data-id="${h.id}" style="--d:${Math.min(idx || 0, 12) * 35}ms">
-    <div class="pin-cover g${gradIdx(h.community)}" style="height:${coverH(h)}px">
+    <div class="pin-cover g${gradIdx(h.community)}">
       <span class="band-char">${esc(first)}</span>
       <span class="pin-status">${h.status === "viewed" ? "已看" : "待看"}</span>
       <button class="fav-btn ${h.isFavorite ? "on" : ""}" data-act="fav" title="收藏">${h.isFavorite ? "♥" : "♡"}</button>
@@ -591,8 +587,8 @@ function cardHTML(h, showLoc, idx){
     </div>
     <div class="pin-body">
       <h3>${esc(name)}</h3>
-      ${locParts.length ? `<div class="pin-loc">${esc(locParts.join(" · "))}</div>` : ""}
-      ${(hasPrice || h.rating) ? `<div class="pin-price">${hasPrice ? `<span class="pnum num">${esc(priceNumStr(h))}</span><span class="punit">元/㎡</span>` : ""}<span class="side">${isSet(h.totalPriceNote) ? `<span class="ptotal">${esc(h.totalPriceNote)}</span>` : ""}${h.rating ? `<span class="prate">★ ${h.rating}</span>` : ""}</span></div>` : ""}
+      <div class="pin-loc">${locParts.length ? esc(locParts.join(" · ")) : "&nbsp;"}</div>
+      <div class="pin-price">${hasPrice ? `<span class="pnum num">${esc(priceNumStr(h))}</span><span class="punit">元/㎡</span>` : `<span class="pnone">价格待录入</span>`}<span class="side">${isSet(h.totalPriceNote) ? `<span class="ptotal">${esc(h.totalPriceNote)}</span>` : ""}${h.rating ? `<span class="prate">★ ${h.rating}</span>` : ""}</span></div>
     </div>
   </article>`;
 }
