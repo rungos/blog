@@ -181,8 +181,8 @@
   .pill{font-size:11.5px; font-weight:600; line-height:1.5; padding:3px 10px; border-radius:999px; background:var(--soft); color:var(--ink)}
   .pill.viewed{background:#111; color:#fff}
   .stars{color:var(--gold); letter-spacing:1.5px; font-size:12.5px}
-  .dsec{padding:16px 0 6px; border-top:1px solid var(--line)}
-  .dsec:first-of-type{border-top:none}
+  .dsec{padding:6px 0 16px; border-top:1px solid var(--line)}
+  .dsec:first-of-type{border-top:none; padding-top:16px}
   .dsec h4{margin:0 0 8px; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em}
   .kv{display:flex; padding:6px 0; border-bottom:1px solid #f4f4f4; font-size:14px; line-height:1.6}
   .kv:last-child{border-bottom:none}
@@ -265,6 +265,13 @@
   .lb-bar{display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:999px; padding:8px 10px 8px 18px; box-shadow:var(--shadow-pop); max-width:94vw}
   .lb-name{font-size:13px; color:var(--muted); max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .lb-bar .btn{height:38px; padding:0 18px; flex:none}
+  /* ---------- 房源收藏视图 ---------- */
+  .fav-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr)); gap:18px}
+  .fav-item{min-width:0}
+  .fav-owner{font-size:13px; color:var(--muted); margin:0 2px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .fav-owner b{color:var(--ink); font-weight:600; font-size:13.5px}
+  .fav-item .lcard{margin-bottom:0}
+  .dd-wrap.dd-off{opacity:.45; pointer-events:none}
   /* ---------- floor plan (户型图) ---------- */
   .lcard{display:flex; gap:12px}
   .lcard .lcard-main{flex:1; min-width:0}
@@ -414,6 +421,7 @@
         <button class="mchip" data-tab="viewed">已看</button>
         <button class="mchip" data-tab="planned">待看</button>
         <button class="mchip" data-tab="fav">收藏</button>
+        <button class="mchip" data-tab="lfav">★ 房源收藏</button>
       </div>
       <div class="pill-selects">
         <select class="pillsel" id="f-city"></select>
@@ -633,6 +641,7 @@ if (SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE")) {
 
 let houses = [];
 let curTab = "all";
+let viewMode = "houses";
 let collapsed = new Set();
 let compareSet = new Set();
 let detailId = null;
@@ -753,11 +762,25 @@ function renderFilterSummary(){
 
 
 /* ==================== 页签 ==================== */
-const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "我的收藏" };
+const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "我的收藏", lfav: "房源收藏" };
 function setTab(tab){
-  curTab = tab;
-  document.querySelectorAll("#mobile-chips .mchip").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  $("#page-title").textContent = TAB_TITLES[tab] || "全部房源";
+  if (tab === "lfav") {
+    viewMode = (viewMode === "lfav") ? "houses" : "lfav";
+  } else {
+    viewMode = "houses";
+    curTab = tab;
+  }
+  const sortSel = $("#f-sort");
+  if (viewMode === "lfav") sortSel.value = "default";
+  sortSel.disabled = (viewMode === "lfav");
+  const ddWrap = sortSel.closest(".dd-wrap");
+  if (ddWrap) ddWrap.classList.toggle("dd-off", viewMode === "lfav");
+  document.querySelectorAll("#mobile-chips .mchip").forEach(b => {
+    const t = b.dataset.tab;
+    b.classList.toggle("active", t === "lfav" ? viewMode === "lfav" : (viewMode === "houses" && t === curTab));
+  });
+  $("#page-title").textContent = viewMode === "lfav" ? TAB_TITLES.lfav : (TAB_TITLES[curTab] || "全部房源");
+  renderStats();
   renderList();
 }
 $("#mobile-chips").addEventListener("click", e => {
@@ -767,6 +790,12 @@ $("#mobile-chips").addEventListener("click", e => {
 
 /* ==================== 统计 ==================== */
 function renderStats(){
+  if (viewMode === "lfav") {
+    let n = 0; const comms = new Set();
+    for (const h of houses) for (const l of getListings(h)) if (l.isFavorite) { n++; comms.add(h.id); }
+    $("#subline").textContent = `共 ${n} 套收藏房源 · 来自 ${comms.size} 个小区`;
+    return;
+  }
   const total = houses.length;
   const viewed = houses.filter(h=>h.status==="viewed").length;
   const fav = houses.filter(h=>h.isFavorite).length;
@@ -811,12 +840,62 @@ function cardHTML(h, showLoc, idx){
     </div>
   </article>`;
 }
+/* ==================== 房源收藏视图（跨小区平铺 ★ 房源） ==================== */
+function favListingRows(){
+  const f = activeFilters();
+  const rows = [];
+  for (const h of houses) {
+    if (f.city && h.city !== f.city) continue;
+    if (f.district && h.district !== f.district) continue;
+    if (f.sector && h.sector !== f.sector) continue;
+    for (const l of getListings(h)) {
+      if (!l.isFavorite) continue;
+      if (f.q) {
+        const hay = [h.community || "", listingLayoutStr(l), l.note || "", l.orientation || "", isSet(l.areaSqm) ? l.areaSqm + "㎡" : ""].join(" ");
+        if (!hay.includes(f.q)) continue;
+      }
+      rows.push({ h, l });
+    }
+  }
+  rows.sort((a, b) => {
+    const pa = isSet(a.l.totalPriceWan) ? Number(a.l.totalPriceWan) : Infinity;
+    const pb = isSet(b.l.totalPriceWan) ? Number(b.l.totalPriceWan) : Infinity;
+    if (pa !== pb) return pa - pb;
+    return String(a.h.community || "").localeCompare(String(b.h.community || ""), "zh");
+  });
+  return rows;
+}
+function favCardHTML(h, l){
+  const locParts = [h.city, h.district, h.sector].filter(isSet);
+  const loc = locParts.length ? `<span> · ${esc(locParts.join(" · "))}</span>` : "";
+  return `<div class="fav-item" data-fav-house="${h.id}"><div class="fav-owner"><b>${esc(h.community || "（未命名）")}</b>${loc}</div>${listingCardHTML(l)}</div>`;
+}
+function renderFavListings(main){
+  const rows = favListingRows();
+  if (!rows.length) {
+    const anyFav = houses.some(h => getListings(h).some(l => l.isFavorite));
+    main.innerHTML = anyFav
+      ? `<div class="empty"><span class="big">★</span>没有符合条件的收藏房源</div>`
+      : `<div class="empty"><span class="big">★</span>还没有收藏的房源，在房源编辑里勾选「重点关注」即可</div>`;
+    return;
+  }
+  main.innerHTML = `<div class="fav-grid">${rows.map(r => favCardHTML(r.h, r.l)).join("")}</div>`;
+  hydrateMedia(main);
+}
+function openFavListing(houseId, listingId){
+  openDetail(houseId);
+  const h = byId(houseId); if (!h) return;
+  listingsOpen = true;
+  rerenderDrawer(h);
+  openListingDetail(houseId, listingId);
+}
 function renderAll(){ renderStats(); renderList(); }
 function renderList(){
   renderFilterSummary();
   const f = activeFilters();
   const list = filteredHouses();
   const main = $("#list-main");
+  if (viewMode === "lfav") { renderFavListings(main); updateCompareBar(); return; }
   if (!list.length) {
     main.innerHTML = `<div class="empty"><span class="big">⌂</span>没有符合条件的记录</div>`;
     updateCompareBar(); return;
@@ -836,6 +915,12 @@ function renderList(){
   updateCompareBar();
 }
 $("#list-main").addEventListener("click", async e => {
+  const favItem = e.target.closest(".fav-item");
+  if (favItem) {
+    const lv = e.target.closest("[data-lview]");
+    if (lv) openFavListing(Number(favItem.dataset.favHouse), lv.dataset.lview);
+    return;
+  }
   const gh = e.target.closest(".group-head");
   if (gh) { const k = gh.dataset.group; collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k); renderList(); return; }
   const card = e.target.closest(".hcard"); if (!card) return;
@@ -1915,7 +2000,7 @@ const FORM_SECTIONS = [
     ["listTotalPriceMin","挂牌总价下限（万）","num"], ["listTotalPriceMax","挂牌总价上限（万）","num"],
     ["dealPriceMin","最近成交价下限（万）","num"], ["dealPriceMax","最近成交价上限（万）","num"],
     ["monthlyRent","参考月租金（元/月）","num"],
-    ["rentSaleRatio","租售比","text","","填月租金后按挂牌总价自动算（双值取平均），可手动改"], ["transactionVolume","近30天成交量","text"]
+    ["rentSaleRatio","租售比","text","","填月租金后按挂牌总价自动算（双值取平均；没填挂牌总价时用原总价范围），可手动改"], ["transactionVolume","近30天成交量","text"]
   ]],
   ["房屋与小区", [
     ["builtYear","建成年","num"], ["buildingType","建筑类型","msel"],
@@ -2019,12 +2104,18 @@ function openEdit(id){
     const rent = Number(rentEl.value);
     if (!(rent > 0)) return;
     const pv = el => (el && el.value !== "" ? Number(el.value) : null);
-    const a = pv(totMinEl), b = pv(totMaxEl);
+    let a = pv(totMinEl), b = pv(totMaxEl);
+    if (a === null && b === null) {
+      /* 表单未填挂牌总价时，回退记录里的原总价范围（与展示层 listTotalStr 同口径） */
+      a = isSet(h.totalPriceMin) ? Number(h.totalPriceMin) : null;
+      b = isSet(h.totalPriceMax) ? Number(h.totalPriceMax) : null;
+    }
     const tot = (a !== null && b !== null) ? (a + b) / 2 : (a !== null ? a : b);
     if (tot === null || !(tot > 0)) return;
     ratioEl.value = "1:" + Math.round(tot * 10000 / rent);
   };
   [rentEl, totMinEl, totMaxEl].forEach(el => { if (el) el.addEventListener("input", autoRatio); });
+  if (ratioEl && !ratioEl.value.trim()) autoRatio();
   $("#edit-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 }
