@@ -66,7 +66,7 @@
   .search-box{flex:1; max-width:620px; margin:0 auto; position:relative}
   .search-box input{height:48px; border-radius:999px; background:var(--soft); border:1.5px solid transparent; padding:0 18px 0 44px; font-size:15px}
   .search-box input:focus{background:#fff; border-color:transparent; box-shadow:0 0 0 2px rgba(17,17,17,.65)}
-  .search-box .ic{position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:16px; pointer-events:none}
+  .search-box .ic{position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:30px; pointer-events:none}
   .tb-actions{display:flex; align-items:center; gap:10px; flex:none}
   .avatar-btn{width:40px; height:40px; border-radius:50%; background:#111; color:#fff; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:background .15s ease}
   .avatar-btn:hover{background:#333}
@@ -181,11 +181,10 @@
   .pill{font-size:11.5px; font-weight:600; line-height:1.5; padding:3px 10px; border-radius:999px; background:var(--soft); color:var(--ink)}
   .pill.viewed{background:#111; color:#fff}
   .stars{color:var(--gold); letter-spacing:1.5px; font-size:12.5px}
-  .dsec{padding:6px 0 16px; border-top:1px solid var(--line)}
-  .dsec:first-of-type{border-top:none; padding-top:16px}
+  .dsec{padding:6px 0 16px}
+  .dsec:first-of-type{padding-top:16px}
   .dsec h4{margin:0 0 8px; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em}
-  .kv{display:flex; padding:6px 0; border-bottom:1px solid #f4f4f4; font-size:14px; line-height:1.6}
-  .kv:last-child{border-bottom:none}
+  .kv{display:flex; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; line-height:1.6}
   .kv .k{width:110px; flex:none; color:var(--muted); font-size:13px}
   .kv .v{flex:1; white-space:pre-wrap; word-break:break-word; color:var(--text); font-variant-numeric:tabular-nums}
   .kv .v a{color:var(--ink); text-decoration:underline}
@@ -420,8 +419,8 @@
         <button class="mchip active" data-tab="all">全部</button>
         <button class="mchip" data-tab="viewed">已看</button>
         <button class="mchip" data-tab="planned">待看</button>
-        <button class="mchip" data-tab="fav">收藏</button>
-        <button class="mchip" data-tab="lfav">★ 房源收藏</button>
+        <button class="mchip" data-tab="fav">关注小区</button>
+        <button class="mchip" data-tab="lfav">★ 关注房源</button>
       </div>
       <div class="pill-selects">
         <select class="pillsel" id="f-city"></select>
@@ -464,7 +463,7 @@
   <button id="drawer-close" title="关闭">✕</button>
   <div class="drawer-scroll" id="drawer-scroll"></div>
   <div class="drawer-actions">
-    <button class="btn" id="btn-fav-toggle">♡ 收藏</button>
+    <button class="btn" id="btn-fav-toggle">♡ 关注</button>
     <button class="btn" id="btn-cmp-toggle">对比</button>
     <button class="btn primary" id="btn-edit">编辑</button>
     <button class="btn danger" id="btn-del">删除</button>
@@ -713,13 +712,13 @@ function fillSelect(sel, vals, allLabel, keep){
   sel.innerHTML = `<option value="">${allLabel}</option>` + vals.map(v => `<option ${v===cur?"selected":""}>${esc(v)}</option>`).join("");
 }
 function buildFilterOptions(){
-  fillSelect($("#f-city"), uniqSorted(houses.map(h=>h.city)), "全部城市", true);
+  fillSelect($("#f-city"), uniqSorted(houses.map(h=>h.city)), "城市", true);
   buildDistrictOptions();
 }
 function buildDistrictOptions(){
   const city = $("#f-city").value;
   const pool = city ? houses.filter(h=>h.city===city) : houses;
-  fillSelect($("#f-district"), uniqSorted(pool.map(h=>h.district)), "全部区", true);
+  fillSelect($("#f-district"), uniqSorted(pool.map(h=>h.district)), "区域", true);
   buildSectorOptions();
 }
 function buildSectorOptions(){
@@ -727,7 +726,7 @@ function buildSectorOptions(){
   let pool = houses;
   if (city) pool = pool.filter(h=>h.city===city);
   if (dist) pool = pool.filter(h=>h.district===dist);
-  fillSelect($("#f-sector"), uniqSorted(pool.map(h=>h.sector)), "全部板块", true);
+  fillSelect($("#f-sector"), uniqSorted(pool.map(h=>h.sector)), "板块", true);
 }
 $("#f-city").addEventListener("change", () => { buildDistrictOptions(); renderList(); });
 $("#f-district").addEventListener("change", () => { buildSectorOptions(); renderList(); });
@@ -762,7 +761,7 @@ function renderFilterSummary(){
 
 
 /* ==================== 页签 ==================== */
-const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "我的收藏", lfav: "房源收藏" };
+const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源" };
 function setTab(tab){
   if (tab === "lfav") {
     viewMode = (viewMode === "lfav") ? "houses" : "lfav";
@@ -793,13 +792,13 @@ function renderStats(){
   if (viewMode === "lfav") {
     let n = 0; const comms = new Set();
     for (const h of houses) for (const l of getListings(h)) if (l.isFavorite) { n++; comms.add(h.id); }
-    $("#subline").textContent = `共 ${n} 套收藏房源 · 来自 ${comms.size} 个小区`;
+    $("#subline").textContent = `共 ${n} 套关注房源 · 来自 ${comms.size} 个小区`;
     return;
   }
   const total = houses.length;
   const viewed = houses.filter(h=>h.status==="viewed").length;
   const fav = houses.filter(h=>h.isFavorite).length;
-  $("#subline").textContent = `共 ${total} 套 · 已看 ${viewed} · 收藏 ${fav}`;
+  $("#subline").textContent = `共 ${total} 套 · 已看 ${viewed} · 关注 ${fav}`;
 }
 
 /* ==================== 列表渲染（瀑布流 Pin 卡） ==================== */
@@ -830,7 +829,7 @@ function cardHTML(h, showLoc, idx){
     <div class="pin-cover g${gradIdx(h.community)}">
       <span class="band-char">${esc(first)}</span>
       <span class="pin-status">${h.status === "viewed" ? "已看" : "待看"}</span>
-      <button class="fav-btn ${h.isFavorite ? "on" : ""}" data-act="fav" title="收藏">${h.isFavorite ? "♥" : "♡"}</button>
+      <button class="fav-btn ${h.isFavorite ? "on" : ""}" data-act="fav" title="关注">${h.isFavorite ? "♥" : "♡"}</button>
       <button class="cmp-btn ${inCmp ? "on" : ""}" data-act="cmp" title="加入对比">${inCmp ? "✓" : "＋"}</button>
     </div>
     <div class="pin-body">
@@ -875,8 +874,8 @@ function renderFavListings(main){
   if (!rows.length) {
     const anyFav = houses.some(h => getListings(h).some(l => l.isFavorite));
     main.innerHTML = anyFav
-      ? `<div class="empty"><span class="big">★</span>没有符合条件的收藏房源</div>`
-      : `<div class="empty"><span class="big">★</span>还没有收藏的房源，在房源编辑里勾选「重点关注」即可</div>`;
+      ? `<div class="empty"><span class="big">★</span>没有符合条件的关注房源</div>`
+      : `<div class="empty"><span class="big">★</span>还没有关注的房源，在房源编辑里勾选「关注房源」即可</div>`;
     return;
   }
   main.innerHTML = `<div class="fav-grid">${rows.map(r => favCardHTML(r.h, r.l)).join("")}</div>`;
@@ -930,7 +929,7 @@ $("#list-main").addEventListener("click", async e => {
   if (act === "fav") {
     const h = byId(id); if (!h) return;
     h.isFavorite = !h.isFavorite;
-    try { await dbUpdate(h); renderStats(); renderList(); if (detailId === id) syncDrawerActions(h); toast(h.isFavorite ? "已收藏" : "已取消收藏"); }
+    try { await dbUpdate(h); renderStats(); renderList(); if (detailId === id) syncDrawerActions(h); toast(h.isFavorite ? "已关注" : "已取消关注"); }
     catch(err){ h.isFavorite = !h.isFavorite; toast("保存失败：" + err.message); }
     return;
   }
@@ -1073,7 +1072,7 @@ function detailHTML(h){
   return html;
 }
 function syncDrawerActions(h){
-  $("#btn-fav-toggle").textContent = h.isFavorite ? "♥ 已收藏" : "♡ 收藏";
+  $("#btn-fav-toggle").textContent = h.isFavorite ? "♥ 已关注" : "♡ 关注";
   $("#btn-fav-toggle").classList.toggle("fav-on", !!h.isFavorite);
   $("#btn-cmp-toggle").textContent = compareSet.has(h.id) ? "✓ 已加入对比" : "＋ 对比";
 }
@@ -1102,7 +1101,7 @@ $("#drawer-scrim").addEventListener("click", closeDrawer);
 $("#btn-fav-toggle").addEventListener("click", async () => {
   const h = byId(detailId); if (!h) return;
   h.isFavorite = !h.isFavorite;
-  try { await dbUpdate(h); syncDrawerActions(h); renderStats(); renderList(); toast(h.isFavorite ? "已收藏" : "已取消收藏"); }
+  try { await dbUpdate(h); syncDrawerActions(h); renderStats(); renderList(); toast(h.isFavorite ? "已关注" : "已取消关注"); }
   catch(err){ h.isFavorite = !h.isFavorite; toast("保存失败：" + err.message); }
 });
 $("#btn-cmp-toggle").addEventListener("click", () => {
@@ -1255,7 +1254,7 @@ function openListingForm(houseId, listingId){
       <option value="beike" ${so === "beike" ? "selected" : ""}>贝壳收藏</option>
       <option value="agent" ${so === "agent" ? "selected" : ""}>中介推荐</option>
       <option value="manual" ${so === "manual" ? "selected" : ""}>自己录入</option></select></div>
-    <div class="fld"><label>重点关注</label><select id="lf-isFavorite">
+    <div class="fld"><label>关注房源</label><select id="lf-isFavorite">
       <option value="0" ${!l?.isFavorite ? "selected" : ""}>否</option>
       <option value="1" ${l?.isFavorite ? "selected" : ""}>是 ★</option></select></div>
     ${lfText("lf-url", "贝壳链接", l?.url, "https://…", true)}
@@ -1450,7 +1449,7 @@ function openListingDetail(houseId, listingId){
   const layout = listingLayoutStr(l);
   $("#ldetail-title").textContent = (h.community || "房源详情") + (layout ? " · " + layout : "");
   const off = l.status === "stopped" || l.status === "sold";
-  let body = `<div class="ld-sub"><span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>${l.isFavorite ? '<span class="lfav">★ 重点关注</span>' : ""}</div>`;
+  let body = `<div class="ld-sub"><span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>${l.isFavorite ? '<span class="lfav">★ 关注房源</span>' : ""}</div>`;
   body += floorPlanSectionHTML(l);
   const sec = (title, rows) => { if (rows) body += `<section class="dsec"><h4>${title}</h4>${rows}</section>`; };
   let r = "";
@@ -2073,8 +2072,8 @@ function openEdit(id){
   if (!h) return;
   $("#edit-title").textContent = id ? "编辑 · " + (h.community||"") : "新增一套";
   let html = "";
-  html += `<section class="fsec"><h4>收藏与评分</h4><div class="fgrid">
-    <div class="fld"><label>收藏</label><select id="ef-isFavorite">
+  html += `<section class="fsec"><h4>关注与评分</h4><div class="fgrid">
+    <div class="fld"><label>关注</label><select id="ef-isFavorite">
       <option value="0" ${!h.isFavorite?"selected":""}>否</option>
       <option value="1" ${h.isFavorite?"selected":""}>是 ★</option></select></div>
     <div class="fld"><label>评分（1-5）</label><div class="rate-pick" id="rate-pick">
