@@ -184,13 +184,17 @@
   .dsec{padding:6px 0 16px}
   .dsec:first-of-type{padding-top:16px}
   .dsec h4{margin:0 0 8px; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em}
-  .kv{display:flex; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; line-height:1.6}
+  .kv{display:flex; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; line-height:1.6}
   .kv .k{width:110px; flex:none; color:var(--muted); font-size:13px}
   .kv .v{flex:1; white-space:pre-wrap; word-break:break-word; color:var(--text); font-variant-numeric:tabular-nums}
   .kv .v a{color:var(--ink); text-decoration:underline}
   .amen{padding:4px 0; font-size:14px; color:var(--text)}
   .amen .d{color:var(--muted); font-size:13px}
-  .notes-txt{white-space:pre-wrap; word-break:break-word; font-size:14px; color:var(--text)}
+  .amen:last-child{border-bottom:1px solid var(--line); padding-bottom:10px}
+  .notes-txt{white-space:pre-wrap; word-break:break-word; font-size:14px; color:var(--text); padding-bottom:10px; border-bottom:1px solid var(--line)}
+  .lsec-body{border-bottom:1px solid var(--line)}
+  .msec .mgrid,.msec .mempty{border-bottom:1px solid var(--line)}
+  .plansec::after{content:""; display:block; margin-top:12px; border-bottom:1px solid var(--line)}
   .notes-txt a{color:var(--ink); text-decoration:underline}
   .drawer-actions{flex:none; display:flex; gap:9px; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:var(--surface); border-top:1px solid var(--line)}
   .drawer-actions .btn{flex:1; height:46px}
