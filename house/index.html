@@ -6,200 +6,271 @@
 <title>看房记录</title>
 <style>
   :root{
-    --bg:#f7f8fa; --surface:#ffffff; --surface2:#f2f4f7; --text:#101d37; --body:#394356; --muted:#9399a5;
-    --border:#e8eaf0; --accent:#00ae66; --accent-dark:#00955a; --accent-soft:#e8f7f0; --on-accent:#ffffff;
-    --gold:#f0a500; --danger:#e23e3e; --shadow:0 2px 10px rgba(16,29,55,.05);
-    --shadow-lg:0 8px 24px rgba(16,29,55,.10);
-    --toast-bg:#101d37; --toast-fg:#ffffff;
-    --wrap:1180px;
-  }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#12161c; --surface:#171c24; --surface2:#21272f; --text:#e8ecf2; --body:#c3cad4; --muted:#9aa3b2;
-      --border:#2a3038; --accent:#2bc37e; --accent-dark:#2bc37e; --accent-soft:#173d2e; --on-accent:#0d241a;
-      --gold:#f5b301; --danger:#ff7a72; --shadow:0 2px 10px rgba(0,0,0,.4);
-      --shadow-lg:0 8px 24px rgba(0,0,0,.55);
-      --toast-bg:#e8ecf2; --toast-fg:#12161c;
-    }
+    --primary:#4f46e5; --primary-dark:#4338ca; --primary-soft:#eef2ff;
+    --amber:#f59e0b;
+    --ink:#101828; --text:#344054; --muted:#667085; --faint:#98a2b3;
+    --bg:#f2f4f7; --surface:#ffffff; --surface2:#f9fafb;
+    --line:#eaecf0; --line-soft:#f2f4f7;
+    --danger:#d92d20; --danger-soft:#fef3f2;
+    --side-bg:#101828; --side-text:#d0d5dd; --side-muted:#98a2b3;
+    --shadow-card:0 1px 3px rgba(16,24,40,.06), 0 12px 32px rgba(16,24,40,.06);
+    --shadow-pop:0 8px 16px rgba(16,24,40,.08), 0 24px 48px rgba(16,24,40,.14);
+    --ring:rgba(79,70,229,.16);
+    --radius:20px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
-  body{background:var(--bg); color:var(--body); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; font-size:15px; line-height:1.6}
-  ::selection{background:rgba(0,174,102,.18)}
-  button{font:inherit; cursor:pointer}
-  input,select,textarea{font-size:16px; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:9px 11px; width:100%}
-  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,174,102,.15)}
-  textarea{resize:vertical; min-height:64px}
+  body{
+    background:
+      radial-gradient(720px 480px at 88% -6%, rgba(79,70,229,.08), rgba(79,70,229,0) 70%),
+      radial-gradient(640px 460px at -8% 24%, rgba(245,158,11,.05), rgba(245,158,11,0) 70%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    font-size:15px; line-height:1.6;
+  }
+  ::selection{background:rgba(79,70,229,.18)}
+  button{font:inherit; cursor:pointer; background:none; border:none; color:inherit}
+  input,select,textarea{font:inherit; font-size:15px; color:var(--ink); background:var(--surface); border:1px solid #d0d5dd; border-radius:12px; padding:10px 13px; width:100%; transition:border-color .15s ease, box-shadow .15s ease}
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--primary); box-shadow:0 0 0 4px var(--ring)}
+  textarea{resize:vertical; min-height:72px}
   .hidden{display:none !important}
+  body.locked{overflow:hidden}
+  .num{font-variant-numeric:tabular-nums}
 
-  /* ---------- login ---------- */
-  #view-login{min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:20px}
-  .login-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow-lg); padding:32px 26px; width:100%; max-width:380px}
-  .login-card h1{font-size:23px; font-weight:700; color:var(--text); margin:0 0 6px; letter-spacing:.5px}
-  .login-card h1::before{content:""; display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--accent); margin-right:10px; vertical-align:1px}
-  .login-card p.sub{color:var(--muted); margin:0 0 18px; font-size:13px; line-height:1.6}
-  .login-card label{display:block; font-size:13px; color:var(--body); margin:14px 0 5px}
-  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:8px; padding:9px 16px; font-size:15px; transition:background .15s ease, border-color .15s ease, box-shadow .15s ease}
-  .btn:hover{border-color:var(--accent); color:var(--accent-dark)}
-  .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
-  .btn.primary:hover{background:var(--accent-dark); border-color:var(--accent-dark); color:var(--on-accent)}
-  .btn.danger{background:var(--danger); border-color:var(--danger); color:#fff}
-  .btn.danger:hover{background:var(--danger); color:#fff; filter:brightness(1.07)}
-  .btn.block{width:100%; margin-top:20px; padding:12px; font-size:16px; border-radius:10px}
-  .btn.small{padding:5px 11px; font-size:13px; border-radius:7px}
+  /* ---------- buttons ---------- */
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid #d0d5dd; background:var(--surface); color:var(--ink); border-radius:999px; padding:9px 18px; font-size:14px; font-weight:600; transition:all .16s ease; white-space:nowrap}
+  .btn:hover{border-color:var(--primary); color:var(--primary); box-shadow:0 2px 8px rgba(16,24,40,.08)}
+  .btn.primary{background:var(--primary); border-color:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(79,70,229,.28)}
+  .btn.primary:hover{background:var(--primary-dark); border-color:var(--primary-dark); color:#fff}
+  .btn.danger{color:var(--danger)}
+  .btn.danger:hover{border-color:var(--danger); color:var(--danger); background:var(--danger-soft); box-shadow:none}
+  .btn.small{padding:6px 14px; font-size:13px}
+  .btn.block{width:100%; padding:13px; font-size:16px}
+  .btn:disabled{opacity:.55; cursor:default; box-shadow:none}
   .err{color:var(--danger); font-size:13px; min-height:18px; margin-top:10px}
   .hint{font-size:12px; color:var(--muted); margin-top:14px; word-break:break-all}
 
-  /* ---------- app frame ---------- */
-  header.appbar{position:sticky; top:0; z-index:30; background:var(--surface); padding:10px 14px 8px; border-bottom:1px solid var(--border)}
-  .appbar-inner{max-width:var(--wrap); margin:0 auto}
-  .appbar-row{display:flex; align-items:center; gap:8px}
-  .appbar h1{font-size:19px; font-weight:700; color:var(--text); margin:0; flex:1; letter-spacing:.5px}
-  .appbar h1::before{content:""; display:inline-block; width:9px; height:9px; border-radius:3px; background:var(--accent); margin-right:9px; vertical-align:1px}
-  .icon-btn{border:1px solid var(--border); background:var(--surface); border-radius:8px; padding:6px 12px; font-size:13px; color:var(--body)}
-  .icon-btn:hover{border-color:var(--accent); color:var(--accent-dark)}
-  .tabs{display:flex; gap:6px; margin-top:10px}
-  .tab{flex:1; text-align:center; padding:7px 0; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:14px}
-  .tab.active{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
-  .search-row{margin-top:8px}
-  .filter-toggle{margin-top:8px; font-size:13px; color:var(--accent-dark); background:none; border:none; padding:2px 0}
-  .filters{margin-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  .filters .full{grid-column:1 / -1}
-  .filters label{font-size:12px; color:var(--muted); display:block; margin-bottom:3px}
-  .filter-summary{font-size:12px; color:var(--muted); margin-top:6px}
-  .filter-summary button{background:none; border:none; color:var(--accent-dark); font-size:12px; padding:0}
+  /* ---------- login ---------- */
+  #view-login{min-height:100dvh; display:flex}
+  .login-brand{flex:1.05; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:center; padding:64px 72px; color:#fff;
+    background:linear-gradient(135deg,#312e81 0%, #4f46e5 52%, #7c3aed 100%)}
+  .login-brand::before,.login-brand::after{content:""; position:absolute; border:1.5px solid rgba(255,255,255,.20); border-radius:50%}
+  .login-brand::before{width:480px; height:480px; right:-140px; top:-140px}
+  .login-brand::after{width:300px; height:300px; right:-40px; top:-40px; border-color:rgba(255,255,255,.13)}
+  .login-brand .ring3{position:absolute; width:560px; height:560px; left:-220px; bottom:-280px; border:1.5px solid rgba(255,255,255,.10); border-radius:50%}
+  .login-logo{display:flex; align-items:center; gap:12px; position:relative; z-index:1}
+  .logo-mark{width:42px; height:42px; border-radius:13px; background:#fff; color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:800; box-shadow:0 6px 16px rgba(16,24,40,.25)}
+  .login-brand h1{font-size:52px; font-weight:800; letter-spacing:-.01em; margin:38px 0 10px; position:relative; z-index:1}
+  .login-brand p{font-size:17px; color:rgba(255,255,255,.82); margin:0; position:relative; z-index:1}
+  .login-form-side{flex:1; display:flex; align-items:center; justify-content:center; padding:32px 24px; background:var(--surface)}
+  .login-box{width:100%; max-width:380px}
+  .login-box h2{font-size:26px; font-weight:800; color:var(--ink); letter-spacing:-.01em; margin:0 0 6px}
+  .login-box .sub{color:var(--muted); font-size:14px; margin:0 0 8px}
+  .login-box label{display:block; font-size:13px; font-weight:600; color:var(--ink); margin:18px 0 7px}
+  @media (max-width:860px){ .login-brand{display:none} }
 
-  main{padding:14px 14px 110px; max-width:860px; margin:0 auto}
-  .group{margin-bottom:16px}
-  .group-head{display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:10px; padding:10px 12px; font-weight:700; color:var(--text); font-size:15px}
-  .group-head .cnt{background:var(--surface2); color:var(--muted); font-weight:400; font-size:12.5px; border-radius:20px; padding:0 9px; font-variant-numeric:tabular-nums}
-  .group-head .chev{margin-left:auto; color:var(--muted)}
-  .group-body{margin-top:10px; display:flex; flex-direction:column; gap:10px}
-  .card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 15px; box-shadow:var(--shadow)}
-  .card-top{display:flex; align-items:flex-start; gap:8px}
-  .card h3{margin:0; font-size:16px; font-weight:600; color:var(--text); flex:1}
-  .star{background:none; border:none; font-size:21px; line-height:1; color:#d4d9e0; padding:0 2px}
-  .star.on{color:var(--gold)}
-  .meta{color:var(--muted); font-size:13px; margin-top:4px; line-height:1.55; font-variant-numeric:tabular-nums}
-  .meta b{color:var(--text); font-weight:700}
-  .tag{display:inline-block; font-size:11px; line-height:1.5; padding:1px 7px; border-radius:4px; background:var(--surface2); color:var(--body); margin-right:5px}
-  .tag.viewed{background:var(--accent-soft); color:var(--accent-dark)}
-  .card-foot{display:flex; align-items:center; gap:10px; margin-top:10px; padding-top:9px; border-top:1px dashed var(--border); font-size:12px; color:var(--muted)}
-  .card-foot label{display:flex; align-items:center; gap:4px}
-  .card-foot input{width:auto}
-  .stars{color:var(--gold); letter-spacing:1px; font-size:13px}
-  .empty{color:var(--muted); text-align:center; padding:40px 0}
+  /* ---------- app shell ---------- */
+  #view-app{display:flex; min-height:100dvh}
+  #sidebar{width:260px; flex:none; background:var(--side-bg); color:var(--side-text); position:sticky; top:0; height:100dvh; display:flex; flex-direction:column; padding:22px 16px 18px; z-index:60}
+  .side-logo{display:flex; align-items:center; gap:11px; padding:2px 8px 20px}
+  .side-logo .logo-mark{width:36px; height:36px; border-radius:11px; font-size:18px; background:var(--primary); color:#fff; box-shadow:none}
+  .side-logo span{font-size:17px; font-weight:800; color:#fff; letter-spacing:.01em}
+  .side-nav{display:flex; flex-direction:column; gap:4px}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; color:var(--side-text); font-size:14.5px; font-weight:500; text-align:left; transition:all .16s ease; width:100%}
+  .nav-item:hover{background:rgba(255,255,255,.06); color:#fff}
+  .nav-item.active{background:var(--primary); color:#fff; box-shadow:0 6px 14px rgba(79,70,229,.35)}
+  .nav-item .cnt{margin-left:auto; font-size:12px; font-weight:700; background:rgba(255,255,255,.14); color:#fff; border-radius:999px; padding:1px 8px; font-variant-numeric:tabular-nums}
+  .nav-item.active .cnt{background:rgba(255,255,255,.22)}
+  .side-sec-title{font-size:11.5px; font-weight:700; letter-spacing:.10em; color:var(--side-muted); margin:24px 8px 10px}
+  .side-filters{display:flex; flex-direction:column; gap:10px}
+  .side-filters label{font-size:12px; color:var(--side-muted); display:block; margin:0 0 4px 2px}
+  .side-filters select{background:#1d2939; border-color:#344054; color:#f2f4f7}
+  .side-filters select:focus{border-color:var(--primary); box-shadow:0 0 0 4px rgba(79,70,229,.30)}
+  .side-spacer{flex:1}
+  .side-import{width:100%; justify-content:flex-start; background:rgba(255,255,255,.05); border-color:#344054; color:var(--side-text)}
+  .side-import:hover{background:rgba(255,255,255,.10); color:#fff; border-color:#475467; box-shadow:none}
+  .side-user{margin-top:14px; padding:13px 12px 2px; border-top:1px solid #1d2939; display:flex; align-items:center; gap:10px}
+  .avatar{width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#a855f7); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex:none}
+  .side-user .mail{flex:1; font-size:12.5px; color:var(--side-text); word-break:break-all; line-height:1.35}
+  .logout-btn{color:var(--side-muted); font-size:13px; padding:6px 8px; border-radius:8px; flex:none}
+  .logout-btn:hover{color:#fff; background:rgba(255,255,255,.08)}
+  #side-backdrop{display:none}
 
-  .fab{position:fixed; right:16px; bottom:calc(18px + env(safe-area-inset-bottom)); z-index:40; background:var(--accent); color:var(--on-accent); border:none; border-radius:26px; padding:13px 20px; font-size:15px; font-weight:600; box-shadow:0 6px 18px rgba(0,174,102,.35)}
-  .fab:hover{background:var(--accent-dark)}
-  #compare-bar{position:fixed; left:0; right:0; bottom:0; z-index:35; background:var(--surface); border-top:1px solid var(--border); padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:10px}
-  #compare-bar span{flex:1; font-size:13px; color:var(--muted)}
+  .main-wrap{flex:1; min-width:0; padding:28px 34px 120px; max-width:1460px; margin:0 auto; width:100%}
+  .topbar-mobile{display:none}
+  .page-head{display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap}
+  .page-head .titles{flex:1; min-width:200px}
+  .page-head h1{font-size:30px; font-weight:800; color:var(--ink); letter-spacing:-.01em; margin:0}
+  .page-head .subline{color:var(--muted); font-size:13.5px; margin-top:3px; font-variant-numeric:tabular-nums}
+  .search-box{position:relative; width:320px; max-width:100%}
+  .search-box input{border-radius:999px; padding:11px 16px 11px 40px; background:var(--surface); border-color:var(--line); box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .search-box input:focus{border-color:var(--primary)}
+  .search-box .ic{position:absolute; left:15px; top:50%; transform:translateY(-50%); color:var(--faint); font-size:15px; pointer-events:none}
+  .mobile-chips{display:none}
+  .filter-summary{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px; font-size:13px; color:var(--muted)}
+  .filter-summary .chip-x{background:var(--primary-soft); color:var(--primary); border-radius:999px; padding:3px 10px; font-weight:600}
+  .filter-summary button{color:var(--primary); font-weight:600; font-size:13px; padding:2px 4px}
 
-  /* ---------- detail / edit ---------- */
-  .page-head{display:flex; align-items:center; gap:10px; padding:12px 14px 0; max-width:860px; margin:0 auto}
-  .crumb{font-size:12px; color:var(--muted); padding:6px 14px 0; max-width:860px; margin:0 auto}
-  .detail-title{font-size:20px; font-weight:700; color:var(--text); margin:4px 0 0}
-  section.blk{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow)}
-  section.blk h4{margin:0 0 9px; font-size:14px; font-weight:600; color:var(--text)}
-  section.blk h4::before{content:""; display:inline-block; width:4px; height:12px; border-radius:2px; background:var(--accent); margin-right:8px; vertical-align:-1px}
-  .kv{display:flex; padding:5px 0; border-bottom:1px dashed var(--border); font-size:14px; line-height:1.55}
+  /* ---------- stats ---------- */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:24px}
+  .stat{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow-card)}
+  .stat .v{font-size:28px; font-weight:800; color:var(--ink); line-height:1.15; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  .stat .l{font-size:13px; color:var(--muted); margin-top:2px}
+  .stat .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:1px}
+
+  /* ---------- groups & cards ---------- */
+  .group{margin-top:30px}
+  .group-head{display:flex; align-items:baseline; gap:10px; width:100%; text-align:left; padding:4px 2px 12px; color:var(--ink)}
+  .group-head .t{font-size:20px; font-weight:800; letter-spacing:-.01em}
+  .group-head .cnt{font-size:13px; font-weight:700; color:var(--primary)}
+  .group-head .chev{margin-left:auto; color:var(--faint); font-size:14px; transition:transform .18s ease}
+  .group-head.closed .chev{transform:rotate(-90deg)}
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  .hcard{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-card); cursor:pointer; transition:transform .18s ease, box-shadow .18s ease; display:flex; flex-direction:column}
+  .hcard:hover{transform:translateY(-3px); box-shadow:0 4px 8px rgba(16,24,40,.06), 0 20px 40px rgba(16,24,40,.10)}
+  .band{height:64px; position:relative; flex:none}
+  .band .band-char{position:absolute; left:16px; bottom:-8px; font-size:46px; font-weight:800; color:rgba(255,255,255,.38); line-height:1; letter-spacing:0}
+  .band .fav-btn{position:absolute; right:12px; top:12px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.92); color:#c3cad4; font-size:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(16,24,40,.16); transition:all .15s ease}
+  .band .fav-btn:hover{transform:scale(1.08)}
+  .band .fav-btn.on{color:var(--amber)}
+  .g0{background:linear-gradient(120deg,#818cf8,#a78bfa)} .g1{background:linear-gradient(120deg,#a78bfa,#f0abfc)}
+  .g2{background:linear-gradient(120deg,#38bdf8,#818cf8)} .g3{background:linear-gradient(120deg,#34d399,#2dd4bf)}
+  .g4{background:linear-gradient(120deg,#fbbf24,#fb923c)} .g5{background:linear-gradient(120deg,#fda4af,#f472b6)}
+  .hcard-body{padding:16px 18px 14px; display:flex; flex-direction:column; flex:1}
+  .hcard h3{margin:0; font-size:17px; font-weight:800; color:var(--ink); letter-spacing:-.01em; line-height:1.35}
+  .hc-loc{color:var(--muted); font-size:13px; margin-top:3px}
+  .hc-price{margin-top:10px; display:flex; align-items:baseline; gap:5px; flex-wrap:wrap}
+  .hc-price .pnum{font-size:22px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  .hc-price .punit{font-size:12.5px; color:var(--muted)}
+  .hc-price .hist{font-size:12.5px; color:var(--faint); margin-left:2px}
+  .hc-total{font-size:13px; color:var(--text); margin-top:2px}
+  .hc-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:11px}
+  .chip{font-size:12px; line-height:1.5; padding:2.5px 9px; border-radius:999px; background:var(--surface2); border:1px solid var(--line); color:var(--text)}
+  .hc-brief{font-size:12.5px; color:var(--muted); margin-top:9px; font-variant-numeric:tabular-nums}
+  .hc-foot{display:flex; align-items:center; gap:9px; margin-top:auto; padding-top:13px; border-top:1px solid var(--line-soft); font-size:12.5px; color:var(--muted)}
+  .pill{font-size:12px; font-weight:700; line-height:1.5; padding:2.5px 10px; border-radius:999px; background:#eaecf0; color:var(--muted)}
+  .pill.viewed{background:var(--primary); color:#fff}
+  .stars{color:var(--amber); letter-spacing:1.5px; font-size:12.5px}
+  .hc-foot label{display:flex; align-items:center; gap:5px; cursor:pointer; margin-left:auto; font-weight:500}
+  .hc-foot input{width:16px; height:16px; padding:0; accent-color:var(--primary); cursor:pointer}
+  .empty{grid-column:1 / -1; text-align:center; padding:70px 0; color:var(--muted)}
+  .empty .big{font-size:40px; color:#d0d5dd; display:block; margin-bottom:8px}
+
+  /* ---------- compare bar ---------- */
+  #compare-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:22px; z-index:55; background:var(--ink); color:#fff; border-radius:999px; padding:9px 10px 9px 20px; display:flex; align-items:center; gap:12px; box-shadow:0 16px 36px rgba(16,24,40,.30); max-width:calc(100vw - 32px)}
+  #compare-bar span{font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #compare-bar .btn{border:none}
+  #compare-bar .btn.ghosty{background:rgba(255,255,255,.14); color:#fff}
+  #compare-bar .btn.ghosty:hover{background:rgba(255,255,255,.24); color:#fff; box-shadow:none}
+  .fab{display:none}
+
+  /* ---------- drawer (detail) ---------- */
+  .scrim{position:fixed; inset:0; background:rgba(16,24,40,.44); backdrop-filter:blur(2px); opacity:0; pointer-events:none; transition:opacity .22s ease; z-index:70}
+  .scrim.show{opacity:1; pointer-events:auto}
+  #drawer{position:fixed; top:0; right:0; height:100dvh; width:560px; max-width:100vw; background:var(--bg); z-index:80; transform:translateX(102%); transition:transform .24s cubic-bezier(.32,.72,.28,1); display:flex; flex-direction:column; box-shadow:-16px 0 48px rgba(16,24,40,.18)}
+  #drawer.open{transform:translateX(0)}
+  .drawer-scroll{flex:1; overflow-y:auto; padding-bottom:18px}
+  .drawer-band{height:132px; position:relative; flex:none}
+  .drawer-band .band-char{position:absolute; left:22px; bottom:-6px; font-size:84px; font-weight:800; color:rgba(255,255,255,.32); line-height:1}
+  .drawer-close{position:absolute; right:16px; top:16px; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.92); color:var(--ink); font-size:15px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(16,24,40,.18)}
+  .drawer-head{padding:18px 24px 0}
+  .drawer-head h2{font-size:24px; font-weight:800; color:var(--ink); letter-spacing:-.01em; margin:0; line-height:1.3}
+  .drawer-head .meta-line{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:9px; font-size:13px; color:var(--muted)}
+  .drawer-body{padding:16px 24px 0}
+  .dsec{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(16,24,40,.04)}
+  .dsec h4{margin:0 0 8px; font-size:13px; font-weight:800; color:var(--ink); letter-spacing:.04em}
+  .dsec h4::before{content:""; display:inline-block; width:7px; height:7px; border-radius:2.5px; background:var(--primary); margin-right:8px; vertical-align:1px}
+  .kv{display:flex; padding:6.5px 0; border-bottom:1px solid var(--line-soft); font-size:14px; line-height:1.6}
   .kv:last-child{border-bottom:none}
-  .kv .k{width:96px; flex:none; color:var(--muted)}
-  .kv .v{flex:1; white-space:pre-wrap; word-break:break-word; color:var(--body); font-variant-numeric:tabular-nums}
-  .kv .v a{color:var(--accent-dark); text-decoration:none}
-  .kv .v a:hover{color:var(--accent); text-decoration:underline}
-  .amen{padding:3px 0; font-size:14px; color:var(--body)}
+  .kv .k{width:118px; flex:none; color:var(--muted); font-size:13px}
+  .kv .v{flex:1; white-space:pre-wrap; word-break:break-word; color:var(--text); font-variant-numeric:tabular-nums}
+  .kv .v a{color:var(--primary); text-decoration:none}
+  .kv .v a:hover{text-decoration:underline}
+  .amen{padding:4px 0; font-size:14px; color:var(--text)}
   .amen .d{color:var(--muted); font-size:13px}
-  .action-bar{display:flex; gap:8px; padding:4px 14px 30px; max-width:860px; margin:0 auto; flex-wrap:wrap}
+  .notes-txt{white-space:pre-wrap; word-break:break-word; font-size:14px; color:var(--text)}
+  .notes-txt a{color:var(--primary); text-decoration:none}
+  .drawer-actions{flex:none; display:flex; gap:9px; padding:14px 24px calc(14px + env(safe-area-inset-bottom)); background:var(--surface); border-top:1px solid var(--line)}
+  .drawer-actions .btn{flex:1}
 
-  form .blk label{display:block; font-size:13px; color:var(--muted); margin:0 0 4px}
+  /* ---------- modal (edit / compare) ---------- */
+  .modal-wrap{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
+  .modal-scrim{position:absolute; inset:0; background:rgba(16,24,40,.44); backdrop-filter:blur(2px)}
+  .modal{background:var(--bg); border-radius:22px; box-shadow:var(--shadow-pop); position:relative; width:880px; max-width:100%; max-height:calc(100dvh - 44px); display:flex; flex-direction:column; overflow:hidden; animation:pop .22s cubic-bezier(.32,.72,.28,1)}
+  @keyframes pop{from{opacity:0; transform:translateY(10px) scale(.985)} to{opacity:1; transform:none}}
+  .modal-head{display:flex; align-items:center; gap:10px; padding:19px 24px 13px}
+  .modal-head h2{font-size:19px; font-weight:800; color:var(--ink); margin:0; flex:1; letter-spacing:-.01em}
+  .modal-close{width:34px; height:34px; border-radius:50%; background:var(--surface); border:1px solid var(--line); color:var(--muted); font-size:14px; display:flex; align-items:center; justify-content:center; flex:none}
+  .modal-close:hover{color:var(--ink); border-color:#d0d5dd}
+  .modal-body{overflow-y:auto; padding:2px 24px 8px}
+  .modal-foot{display:flex; gap:10px; padding:14px 24px calc(14px + env(safe-area-inset-bottom)); background:var(--surface); border-top:1px solid var(--line)}
+  .modal-foot .btn{flex:1; padding:12px}
+  form .fsec{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px 8px; margin-bottom:12px}
+  form .fsec h4{margin:0 0 12px; font-size:13px; font-weight:800; color:var(--ink); letter-spacing:.04em}
+  form .fsec h4::before{content:""; display:inline-block; width:7px; height:7px; border-radius:2.5px; background:var(--primary); margin-right:8px; vertical-align:1px}
+  form .fgrid{display:grid; grid-template-columns:1fr 1fr; gap:2px 16px}
   form .fld{margin-bottom:11px}
-  form .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  form .fld.full{grid-column:1 / -1}
+  form label{display:block; font-size:12.5px; font-weight:500; color:var(--muted); margin:0 0 5px}
   .arr-row{display:grid; grid-template-columns:1.4fr .7fr 1fr auto; gap:6px; margin-bottom:6px; align-items:center}
-  .arr-row input{padding:7px 9px}
-  .arr-del{border:1px solid var(--border); background:var(--surface); border-radius:7px; padding:6px 9px; color:var(--danger)}
+  .arr-row input{padding:8px 10px}
+  .arr-del{border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:7px 10px; color:var(--danger)}
+  .arr-del:hover{border-color:var(--danger); background:var(--danger-soft)}
   .rate-pick{display:flex; gap:6px}
-  .rate-pick button{flex:1; padding:9px 0; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--muted)}
-  .rate-pick button.on{background:rgba(240,165,0,.12); color:var(--gold); border-color:var(--gold); font-weight:700}
+  .rate-pick button{flex:1; padding:9px 0; border-radius:10px; border:1px solid #d0d5dd; background:var(--surface); color:var(--muted); font-weight:600}
+  .rate-pick button.on{background:#fffbeb; color:var(--ink); border-color:var(--amber)}
+  .cmp-scroll{overflow:auto}
+  table.cmp{width:100%; border-collapse:collapse; font-size:13.5px; background:var(--surface); font-variant-numeric:tabular-nums}
+  table.cmp th, table.cmp td{border-bottom:1px solid var(--line-soft); padding:10px 12px; text-align:left; vertical-align:top; word-break:break-word}
+  table.cmp thead th{font-size:15px; font-weight:800; color:var(--ink); border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface)}
+  table.cmp td.k{color:var(--muted); width:92px; background:var(--surface2); font-size:12.5px; font-weight:600; white-space:nowrap}
+  table.cmp td.best{color:var(--primary); font-weight:800}
 
-  table.cmp{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface); font-variant-numeric:tabular-nums}
-  table.cmp th, table.cmp td{border:1px solid var(--border); padding:7px 8px; text-align:left; vertical-align:top; word-break:break-word}
-  table.cmp th{background:var(--surface2); color:var(--text); font-weight:600}
-  table.cmp td.k{color:var(--muted); width:74px; background:var(--surface2)}
-  .cmp-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px}
+  #toast{position:fixed; left:50%; transform:translateX(-50%); bottom:92px; z-index:120; background:var(--ink); color:#fff; padding:10px 20px; border-radius:999px; font-size:13.5px; opacity:0; pointer-events:none; transition:opacity .25s; max-width:88vw; text-align:center; box-shadow:0 10px 26px rgba(16,24,40,.25)}
+  #toast.show{opacity:.97}
 
-  #toast{position:fixed; left:50%; transform:translateX(-50%); bottom:96px; z-index:60; background:var(--toast-bg); color:var(--toast-fg); padding:9px 16px; border-radius:20px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s; max-width:88vw; text-align:center}
-  #toast.show{opacity:.94}
-
-  /* ================= 中屏 ≥768px：容器放宽、卡片 2 列 ================= */
-  @media (min-width:768px){
-    main{max-width:92vw; padding:18px 4px 110px}
-    .page-head,.crumb,.action-bar{max-width:92vw}
-    /* 列表：分组内卡片网格；排序模式下卡片是 #list-main 的直接子元素，同样成格 */
-    #list-main{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; align-items:start}
-    #list-main .group{grid-column:1 / -1; margin-bottom:4px}
-    #list-main .empty{grid-column:1 / -1}
-    .group-body{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:10px}
-    .card{height:100%}
-    /* 详情头部（JS 生成的内联 max-width 容器）放宽到与正文齐平 */
-    #detail-main > div{max-width:none !important; padding:0 !important}
-    /* 详情正文（JS 生成的嵌套 main）取消全局 main 的容器内边距，避免双重缩进 */
-    #detail-main > main{max-width:none; margin:0; padding-left:0; padding-right:0}
-    .login-card{max-width:400px; padding:38px 34px}
+  /* ---------- responsive ---------- */
+  @media (max-width:1240px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:1099px){
+    .main-wrap{padding:22px 20px 120px}
+    .stats{grid-template-columns:repeat(2,1fr)}
   }
-
-  /* ================= 桌面 ≥1024px：正经网页布局 ================= */
-  @media (min-width:1024px){
-    body{font-size:15.5px}
-    main{max-width:var(--wrap); padding:24px 24px 110px}
-    .page-head,.crumb,.action-bar{max-width:var(--wrap); padding-left:24px; padding-right:24px}
-
-    /* ---- 顶栏：纯白导航条，工具行横向排布 ---- */
-    header.appbar{box-shadow:0 1px 6px rgba(16,29,55,.05); padding:0}
-    .appbar-inner{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:13px 24px}
-    .appbar-row{flex:1 1 100%}
-    .appbar h1{font-size:21px}
-    .icon-btn{padding:7px 14px; font-size:13.5px}
-    .tabs{display:inline-flex; flex:0 0 auto; gap:2px; margin-top:0; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:3px}
-    .tab{flex:0 0 auto; border:none; background:transparent; padding:6px 20px; border-radius:7px}
-    .tab.active{background:var(--accent); color:var(--on-accent); box-shadow:0 2px 6px rgba(0,174,102,.25)}
-    .search-row{flex:1 1 300px; max-width:460px; margin-top:0}
-    .filter-toggle{margin-top:0; padding:6px 4px; font-size:13.5px; white-space:nowrap}
-    .filters{flex:1 1 100%; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:2px}
-    .filter-summary{flex:1 1 100%; margin-top:0}
-
-    /* ---- 列表：分组分隔条 + 卡片 3 列网格 ---- */
-    .group{margin-bottom:24px}
-    .group-head{padding:11px 16px; font-size:15.5px; border-radius:10px}
-    #list-main{grid-template-columns:repeat(3,1fr); gap:16px}
-    .group-body{grid-template-columns:repeat(3,1fr); gap:14px; margin-top:12px}
-    .card{padding:16px 18px; border-radius:12px; transition:box-shadow .18s ease, transform .18s ease}
-    .card:hover{box-shadow:var(--shadow-lg); transform:translateY(-2px)}
-    .card h3{font-size:17px}
-    .card-foot{margin-top:12px}
-    .fab{right:28px; bottom:28px; padding:14px 24px}
-    #compare-bar{padding-left:max(14px, calc(50% - var(--wrap) / 2 + 24px)); padding-right:max(14px, calc(50% - var(--wrap) / 2 + 24px))}
-
-    /* ---- 详情：双列字段区，最后一块（备注）整行 ---- */
-    .detail-title{font-size:24px}
-    #detail-main > main{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start}
-    #detail-main section.blk{margin-bottom:0; padding:17px 19px}
-    #detail-main section.blk:last-child{grid-column:1 / -1}
-    .kv .k{width:110px}
-
-    /* ---- 编辑表单：区块内字段两列 ---- */
-    #edit-form section.blk{display:grid; grid-template-columns:1fr 1fr; gap:2px 18px; padding:17px 19px}
-    #edit-form section.blk > h4{grid-column:1 / -1}
-    #edit-form section.blk > .fld{margin-bottom:9px}
-    #edit-form section.blk > .fld:has(textarea){grid-column:1 / -1}
-    #edit-form section.blk > div[id^="amen-"],
-    #edit-form section.blk > button{grid-column:1 / -1; justify-self:start}
-    #edit-form section.blk > button{justify-self:start}
-
-    /* ---- 对比表 ---- */
-    table.cmp{font-size:14px}
-    table.cmp th, table.cmp td{padding:9px 12px}
-    table.cmp td.k{width:110px}
+  @media (max-width:767px){
+    #sidebar{position:fixed; left:0; top:0; transform:translateX(-104%); transition:transform .24s cubic-bezier(.32,.72,.28,1); box-shadow:16px 0 48px rgba(16,24,40,.25)}
+    #sidebar.open{transform:translateX(0)}
+    #side-backdrop{display:block; position:fixed; inset:0; background:rgba(16,24,40,.44); opacity:0; pointer-events:none; transition:opacity .22s; z-index:59}
+    #side-backdrop.show{opacity:1; pointer-events:auto}
+    .main-wrap{padding:0 16px 120px}
+    .topbar-mobile{display:flex; align-items:center; gap:9px; padding:13px 2px 4px; position:sticky; top:0; z-index:40}
+    .topbar-mobile .logo-mark{width:32px; height:32px; border-radius:10px; font-size:16px; background:var(--primary); color:#fff}
+    .topbar-mobile b{font-size:16.5px; color:var(--ink); font-weight:800; flex:1}
+    .topbar-mobile .tbtn{border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:6px 12px; font-size:13px; font-weight:600; color:var(--ink)}
+    .page-head{margin-top:10px}
+    .page-head h1{font-size:24px}
+    .search-box{width:100%; order:3}
+    .page-head .btn.primary{display:none}
+    .mobile-chips{display:flex; gap:8px; margin-top:16px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none}
+    .mobile-chips::-webkit-scrollbar{display:none}
+    .mchip{flex:none; padding:7px 15px; border-radius:999px; border:1px solid var(--line); background:var(--surface); font-size:13.5px; font-weight:600; color:var(--muted)}
+    .mchip.active{background:var(--ink); border-color:var(--ink); color:#fff}
+    .stats{gap:10px; margin-top:16px}
+    .stat{padding:13px 15px; border-radius:16px}
+    .stat .v{font-size:23px}
+    .grid{grid-template-columns:1fr; gap:14px}
+    .group{margin-top:24px}
+    .group-head .t{font-size:17.5px}
+    #drawer{width:100vw}
+    .modal-wrap{padding:0}
+    .modal{width:100%; max-height:100dvh; height:100dvh; border-radius:0}
+    form .fgrid{grid-template-columns:1fr}
+    #compare-bar{bottom:calc(84px + env(safe-area-inset-bottom)); width:calc(100vw - 24px); justify-content:space-between}
+    .fab{display:flex; position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:50; background:var(--primary); color:#fff; border-radius:999px; padding:14px 22px; font-size:15px; font-weight:700; box-shadow:0 10px 24px rgba(79,70,229,.40); align-items:center; gap:5px}
+    input,select,textarea{font-size:16px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition:none !important; animation:none !important}
   }
 </style>
 </head>
@@ -207,39 +278,42 @@
 
 <!-- ================= 登录 ================= -->
 <div id="view-login">
-  <div class="login-card">
+  <div class="login-brand">
+    <div class="ring3"></div>
+    <div class="login-logo"><div class="logo-mark">房</div></div>
     <h1>看房记录</h1>
-    <form id="login-form">
-      <label for="login-email">邮箱</label>
-      <input id="login-email" type="email" autocomplete="username" required>
-      <label for="login-pass">密码</label>
-      <input id="login-pass" type="password" autocomplete="current-password" required>
-      <div class="err" id="login-err"></div>
-      <button class="btn primary block" type="submit" id="login-btn">登录</button>
-    </form>
-    <p class="hint hidden" id="config-hint">尚未配置 Supabase：请先在 index.html 顶部把 SUPABASE_URL 和 SUPABASE_ANON_KEY 换成你项目的值。</p>
+    <p>把每一套房，看得明明白白。</p>
+  </div>
+  <div class="login-form-side">
+    <div class="login-box">
+      <h2>欢迎回来</h2>
+      <p class="sub">登录后继续你的看房清单</p>
+      <form id="login-form">
+        <label for="login-email">邮箱</label>
+        <input id="login-email" type="email" autocomplete="username" required>
+        <label for="login-pass">密码</label>
+        <input id="login-pass" type="password" autocomplete="current-password" required>
+        <div class="err" id="login-err"></div>
+        <button class="btn primary block" type="submit" id="login-btn" style="margin-top:16px">登录</button>
+      </form>
+      <p class="hint hidden" id="config-hint">尚未配置 Supabase：请先在 index.html 顶部把 SUPABASE_URL 和 SUPABASE_ANON_KEY 换成你项目的值。</p>
+    </div>
   </div>
 </div>
 
-<!-- ================= 列表 ================= -->
-<div id="view-list" class="hidden">
-  <header class="appbar">
-   <div class="appbar-inner">
-    <div class="appbar-row">
-      <h1>看房记录</h1>
-      <button class="icon-btn" id="btn-import">导入</button>
-      <input type="file" id="import-file" accept=".json,application/json" class="hidden">
-      <button class="icon-btn" id="btn-logout">退出</button>
-    </div>
-    <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="all">全部</button>
-      <button class="tab" data-tab="viewed">已看</button>
-      <button class="tab" data-tab="planned">待看</button>
-      <button class="tab" data-tab="fav">收藏</button>
-    </div>
-    <div class="search-row"><input id="search" type="search" placeholder="搜小区名 / 备注"></div>
-    <button class="filter-toggle" id="filter-toggle">筛选 ▾</button>
-    <div class="filters hidden" id="filters">
+<!-- ================= 应用壳 ================= -->
+<div id="view-app" class="hidden">
+  <div id="side-backdrop"></div>
+  <aside id="sidebar">
+    <div class="side-logo"><div class="logo-mark">房</div><span>看房记录</span></div>
+    <nav class="side-nav" id="side-nav">
+      <button class="nav-item active" data-tab="all">▦ 全部<span class="cnt" data-cnt="all"></span></button>
+      <button class="nav-item" data-tab="viewed">✓ 已看<span class="cnt" data-cnt="viewed"></span></button>
+      <button class="nav-item" data-tab="planned">◷ 待看<span class="cnt" data-cnt="planned"></span></button>
+      <button class="nav-item" data-tab="fav">★ 收藏<span class="cnt" data-cnt="fav"></span></button>
+    </nav>
+    <div class="side-sec-title">筛选</div>
+    <div class="side-filters">
       <div><label>城市</label><select id="f-city"></select></div>
       <div><label>区</label><select id="f-district"></select></div>
       <div><label>板块</label><select id="f-sector"></select></div>
@@ -252,52 +326,82 @@
         </select>
       </div>
     </div>
+    <div class="side-spacer"></div>
+    <button class="btn side-import" id="btn-import">⇪ 导入 houses.json</button>
+    <input type="file" id="import-file" accept=".json,application/json" class="hidden">
+    <div class="side-user">
+      <div class="avatar" id="user-avatar">·</div>
+      <div class="mail" id="user-mail"></div>
+      <button class="logout-btn" id="btn-logout">退出</button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <div class="topbar-mobile">
+      <div class="logo-mark">房</div><b>看房记录</b>
+      <button class="tbtn" id="btn-m-filter">筛选</button>
+      <button class="tbtn" id="btn-m-import">导入</button>
+      <button class="tbtn" id="btn-m-logout">退出</button>
+    </div>
+    <div class="page-head">
+      <div class="titles">
+        <h1>看房记录</h1>
+        <div class="subline" id="subline"></div>
+      </div>
+      <div class="search-box"><span class="ic">⌕</span><input id="search" type="search" placeholder="搜小区名 / 区 / 板块 / 备注"></div>
+      <button class="btn primary" id="btn-add-top">＋ 新增一套</button>
+    </div>
+    <div class="mobile-chips" id="mobile-chips">
+      <button class="mchip active" data-tab="all">全部</button>
+      <button class="mchip" data-tab="viewed">已看</button>
+      <button class="mchip" data-tab="planned">待看</button>
+      <button class="mchip" data-tab="fav">收藏</button>
+    </div>
     <div class="filter-summary hidden" id="filter-summary"></div>
-   </div>
-  </header>
-  <main id="list-main"></main>
+    <section class="stats" id="stats"></section>
+    <main id="list-main"></main>
+  </div>
+
   <div id="compare-bar" class="hidden">
     <span id="compare-text"></span>
-    <button class="btn small" id="btn-compare-clear">清空</button>
+    <button class="btn small ghosty" id="btn-compare-clear">清空</button>
     <button class="btn small primary" id="btn-compare-go">对比</button>
   </div>
-  <button class="fab" id="btn-add">＋ 记一套</button>
+  <button class="fab" id="btn-add">＋ 新增一套</button>
 </div>
 
-<!-- ================= 详情 ================= -->
-<div id="view-detail" class="hidden">
-  <div class="page-head">
-    <button class="btn small" id="btn-back">← 返回</button>
-    <span class="stars" id="detail-stars"></span>
-  </div>
-  <div class="crumb" id="detail-crumb"></div>
-  <main id="detail-main" style="padding-top:6px"></main>
-  <div class="action-bar">
+<!-- ================= 详情抽屉 ================= -->
+<div class="scrim" id="drawer-scrim"></div>
+<aside id="drawer" aria-hidden="true">
+  <div class="drawer-scroll" id="drawer-scroll"></div>
+  <div class="drawer-actions">
     <button class="btn" id="btn-fav-toggle">☆ 收藏</button>
+    <button class="btn" id="btn-cmp-toggle">对比</button>
     <button class="btn primary" id="btn-edit">编辑</button>
     <button class="btn danger" id="btn-del">删除</button>
   </div>
+</aside>
+
+<!-- ================= 编辑弹窗 ================= -->
+<div class="modal-wrap hidden" id="edit-wrap">
+  <div class="modal-scrim" data-close-edit></div>
+  <div class="modal">
+    <div class="modal-head"><h2 id="edit-title">编辑</h2><button class="modal-close" data-close-edit>✕</button></div>
+    <div class="modal-body"><form id="edit-form"></form></div>
+    <div class="modal-foot">
+      <button class="btn" data-close-edit>取消</button>
+      <button class="btn primary" id="btn-save">保存</button>
+    </div>
+  </div>
 </div>
 
-<!-- ================= 编辑 ================= -->
-<div id="view-edit" class="hidden">
-  <div class="page-head">
-    <button class="btn small" id="btn-edit-cancel">← 取消</button>
-    <h2 style="font-size:17px;margin:0" id="edit-title">编辑</h2>
+<!-- ================= 对比弹窗 ================= -->
+<div class="modal-wrap hidden" id="cmp-wrap">
+  <div class="modal-scrim" data-close-cmp></div>
+  <div class="modal" style="width:960px">
+    <div class="modal-head"><h2>房源对比</h2><button class="modal-close" data-close-cmp>✕</button></div>
+    <div class="modal-body cmp-scroll"><table class="cmp" id="cmp-table"></table></div>
   </div>
-  <main><form id="edit-form"></form></main>
-  <div class="action-bar">
-    <button class="btn primary" id="btn-save" style="flex:1;padding:12px">保存</button>
-  </div>
-</div>
-
-<!-- ================= 对比 ================= -->
-<div id="view-compare" class="hidden">
-  <div class="page-head">
-    <button class="btn small" id="btn-cmp-back">← 返回</button>
-    <h2 style="font-size:17px;margin:0">对比</h2>
-  </div>
-  <main><div class="cmp-wrap"><table class="cmp" id="cmp-table"></table></div></main>
 </div>
 
 <div id="toast"></div>
@@ -310,12 +414,11 @@
 const SUPABASE_URL = "https://wepbobkwpcxbgorsiqwx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ql7de3Phcu-6kKukB5vj5w_8oSIh9MC";
 
-/* ==================== 工具 ==================== */
-const $ = s => document.querySelector(s);
+//__PURE_START__
+/* ==================== 纯工具（无 DOM 依赖） ==================== */
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const isSet = v => v !== null && v !== undefined && v !== "";
 const fmtNum = v => isSet(v) ? Number(v).toLocaleString("zh-CN") : "";
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2600); }
 function linkify(text){
   return esc(text).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
 }
@@ -326,9 +429,41 @@ function priceStr(h){
   if (isSet(h.unitPriceMin)) return fmtNum(h.unitPriceMin)+" 元/㎡起";
   return "";
 }
+function priceNumStr(h){
+  if (isSet(h.unitPriceMin) && isSet(h.unitPriceMax))
+    return h.unitPriceMin === h.unitPriceMax ? fmtNum(h.unitPriceMin) : fmtNum(h.unitPriceMin)+"–"+fmtNum(h.unitPriceMax);
+  if (isSet(h.unitPriceMin)) return fmtNum(h.unitPriceMin);
+  return "";
+}
 function triStr(v){ return v===1||v===true ? "有" : (v===0||v===false ? "无" : ""); }
+function gradIdx(name){
+  const s = String(name||""); let n = 0;
+  for (let i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0;
+  return n % 6;
+}
+function groupKey(h){ return [h.city||"未填城市", h.district||"未填区", h.sector||""].join(" › "); }
+function groupHouses(list){
+  const groups = new Map();
+  for (const h of list) {
+    const key = groupKey(h);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(h);
+  }
+  return [...groups.entries()];
+}
+function sortHouses(list, sort){
+  const key = { unitPrice: h => isSet(h.unitPriceMin) ? h.unitPriceMin : Infinity,
+                rating: h => -(h.rating||0),
+                builtYear: h => -(h.builtYear||0) }[sort];
+  if (!key) return list;
+  return list.slice().sort((a,b) => key(a)-key(b));
+}
+//__PURE_END__
 
-/* ==================== Supabase ==================== */
+/* ==================== DOM 工具 / 状态 ==================== */
+const $ = s => document.querySelector(s);
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2600); }
+
 let sb = null;
 if (SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE")) {
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -336,50 +471,58 @@ if (SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE")) {
   $("#config-hint").classList.remove("hidden");
 }
 
-/* ==================== 状态 ==================== */
-let houses = [];              // 记录数组（每条为完整 JSON 对象，与 data 列一致）
+let houses = [];
 let curTab = "all";
-let collapsed = new Set();    // 折叠的分组 key
-let compareSet = new Set();   // 对比中的 id
+let collapsed = new Set();
+let compareSet = new Set();
 let detailId = null;
-let editingId = null;         // null = 新增
+let editingId = null;
+let userEmail = "";
 
 /* ==================== 认证 ==================== */
 async function init(){
   if (!sb) return;
   const { data } = await sb.auth.getSession();
-  if (data.session) enterApp();
+  if (data.session) { userEmail = data.session.user?.email || ""; enterApp(); }
   sb.auth.onAuthStateChange((_e, session) => { if (!session) showLogin(); });
 }
 function showLogin(){
   $("#view-login").classList.remove("hidden");
-  ["#view-list","#view-detail","#view-edit","#view-compare"].forEach(s=>$(s).classList.add("hidden"));
+  $("#view-app").classList.add("hidden");
+  closeDrawer(); closeEdit(); closeCompare();
 }
 function enterApp(){
   $("#view-login").classList.add("hidden");
-  $("#view-list").classList.remove("hidden");
+  $("#view-app").classList.remove("hidden");
+  if (userEmail) {
+    $("#user-mail").textContent = userEmail;
+    $("#user-avatar").textContent = userEmail.trim().charAt(0).toUpperCase() || "·";
+  }
   loadHouses();
 }
 $("#login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!sb) { $("#login-err").textContent = "尚未配置 Supabase，无法登录。"; return; }
   $("#login-btn").disabled = true; $("#login-err").textContent = "";
-  const { error } = await sb.auth.signInWithPassword({
+  const { data, error } = await sb.auth.signInWithPassword({
     email: $("#login-email").value.trim(),
     password: $("#login-pass").value
   });
   $("#login-btn").disabled = false;
   if (error) { $("#login-err").textContent = "登录失败：" + error.message; return; }
+  userEmail = data.user?.email || $("#login-email").value.trim();
   enterApp();
 });
-$("#btn-logout").addEventListener("click", async () => { await sb.auth.signOut(); houses = []; showLogin(); });
+async function doLogout(){ if (sb) await sb.auth.signOut(); houses = []; showLogin(); }
+$("#btn-logout").addEventListener("click", doLogout);
+$("#btn-m-logout").addEventListener("click", doLogout);
 
 /* ==================== 数据层（CRUD 按 app_id 匹配） ==================== */
 async function loadHouses(){
   const { data, error } = await sb.from("houses").select("data").order("app_id", { ascending: true });
   if (error) { toast("读取失败：" + error.message); return; }
   houses = (data || []).map(r => r.data);
-  buildFilterOptions(); renderList();
+  buildFilterOptions(); renderAll();
 }
 async function dbInsert(record){
   const { error } = await sb.from("houses").insert({ data: record });
@@ -403,7 +546,7 @@ function fillSelect(sel, vals, allLabel, keep){
 }
 function buildFilterOptions(){
   fillSelect($("#f-city"), uniqSorted(houses.map(h=>h.city)), "全部城市", true);
-  buildDistrictOptions(); 
+  buildDistrictOptions();
 }
 function buildDistrictOptions(){
   const city = $("#f-city").value;
@@ -423,99 +566,134 @@ $("#f-district").addEventListener("change", () => { buildSectorOptions(); render
 $("#f-sector").addEventListener("change", renderList);
 $("#f-sort").addEventListener("change", renderList);
 $("#search").addEventListener("input", renderList);
-$("#filter-toggle").addEventListener("click", () => {
-  const f = $("#filters"); f.classList.toggle("hidden");
-  $("#filter-toggle").textContent = f.classList.contains("hidden") ? "筛选 ▾" : "筛选 ▴";
-  updateFilterSummary();
-});
-function updateFilterSummary(){
-  const parts = [];
-  if ($("#f-city").value) parts.push($("#f-city").value);
-  if ($("#f-district").value) parts.push($("#f-district").value);
-  if ($("#f-sector").value) parts.push($("#f-sector").value);
-  if ($("#f-sort").value !== "default") parts.push("已排序");
-  const box = $("#filter-summary");
-  if (parts.length && $("#filters").classList.contains("hidden")) {
-    box.innerHTML = "当前：" + esc(parts.join(" · ")) + ` <button id="fs-clear">清除</button>`;
-    box.classList.remove("hidden");
-    $("#fs-clear").addEventListener("click", () => {
-      $("#f-city").value = ""; buildDistrictOptions();
-      $("#f-sort").value = "default"; renderList(); updateFilterSummary();
-    });
-  } else box.classList.add("hidden");
+function activeFilters(){
+  const f = { city: $("#f-city").value, district: $("#f-district").value, sector: $("#f-sector").value,
+              sort: $("#f-sort").value, q: $("#search").value.trim() };
+  f.any = !!(f.city || f.district || f.sector || f.q || f.sort !== "default");
+  return f;
 }
-$("#tabs").addEventListener("click", e => {
-  const b = e.target.closest(".tab"); if (!b) return;
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t===b));
-  curTab = b.dataset.tab; renderList();
-});
+function clearFilters(){
+  $("#f-city").value = ""; buildDistrictOptions();
+  $("#f-sort").value = "default"; $("#search").value = "";
+  renderList();
+}
+function renderFilterSummary(){
+  const f = activeFilters();
+  const box = $("#filter-summary");
+  if (!f.any) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  const parts = [];
+  if (f.city) parts.push(f.city);
+  if (f.district) parts.push(f.district);
+  if (f.sector) parts.push(f.sector);
+  if (f.q) parts.push("搜索「" + f.q + "」");
+  if (f.sort !== "default") parts.push("已排序");
+  box.innerHTML = `<span>当前筛选</span>` + parts.map(p => `<span class="chip-x">${esc(p)}</span>`).join("") + `<button id="fs-clear">清除全部</button>`;
+  box.classList.remove("hidden");
+  $("#fs-clear").addEventListener("click", clearFilters);
+}
 
+/* ==================== 页签 ==================== */
+function setTab(tab){
+  curTab = tab;
+  document.querySelectorAll("#side-nav .nav-item").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll("#mobile-chips .mchip").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  renderList();
+}
+$("#side-nav").addEventListener("click", e => {
+  const b = e.target.closest(".nav-item"); if (!b) return;
+  setTab(b.dataset.tab); closeSidebarMobile();
+});
+$("#mobile-chips").addEventListener("click", e => {
+  const b = e.target.closest(".mchip"); if (!b) return;
+  setTab(b.dataset.tab);
+});
+function openSidebarMobile(){ $("#sidebar").classList.add("open"); $("#side-backdrop").classList.add("show"); }
+function closeSidebarMobile(){ $("#sidebar").classList.remove("open"); $("#side-backdrop").classList.remove("show"); }
+$("#btn-m-filter").addEventListener("click", openSidebarMobile);
+$("#side-backdrop").addEventListener("click", closeSidebarMobile);
+
+/* ==================== 统计 ==================== */
+function renderStats(){
+  const total = houses.length;
+  const viewed = houses.filter(h=>h.status==="viewed").length;
+  const planned = houses.filter(h=>h.status==="planned").length;
+  const fav = houses.filter(h=>h.isFavorite).length;
+  $("#stats").innerHTML = [
+    [total, "总套数", "#4f46e5"], [viewed, "已看", "#0e9384"], [planned, "待看", "#98a2b3"], [fav, "收藏", "#f59e0b"]
+  ].map(([v,l,c]) => `<div class="stat"><div class="v num">${v}</div><div class="l"><span class="dot" style="background:${c}"></span>${l}</div></div>`).join("");
+  $("#subline").textContent = `共 ${total} 套 · 已看 ${viewed} · 待看 ${planned} · 收藏 ${fav}`;
+  document.querySelectorAll("[data-cnt]").forEach(el => {
+    el.textContent = { all: total, viewed, planned, fav }[el.dataset.cnt] ?? "";
+  });
+}
+
+/* ==================== 列表渲染 ==================== */
 function filteredHouses(){
   let list = houses.slice();
   if (curTab === "viewed") list = list.filter(h=>h.status==="viewed");
   if (curTab === "planned") list = list.filter(h=>h.status==="planned");
   if (curTab === "fav") list = list.filter(h=>h.isFavorite);
-  const city = $("#f-city").value, dist = $("#f-district").value, sec = $("#f-sector").value;
-  if (city) list = list.filter(h=>h.city===city);
-  if (dist) list = list.filter(h=>h.district===dist);
-  if (sec) list = list.filter(h=>h.sector===sec);
-  const q = $("#search").value.trim();
-  if (q) list = list.filter(h => (h.community||"").includes(q) || (h.notes||"").includes(q) || (h.district||"").includes(q) || (h.sector||"").includes(q));
+  const f = activeFilters();
+  if (f.city) list = list.filter(h=>h.city===f.city);
+  if (f.district) list = list.filter(h=>h.district===f.district);
+  if (f.sector) list = list.filter(h=>h.sector===f.sector);
+  if (f.q) list = list.filter(h => (h.community||"").includes(f.q) || (h.notes||"").includes(f.q) || (h.district||"").includes(f.q) || (h.sector||"").includes(f.q));
   return list;
 }
-
-/* ==================== 列表渲染 ==================== */
 function cardHTML(h, showLoc){
-  const loc = showLoc ? `<div class="meta">${esc(h.city||"")} · ${esc(h.district||"")}${h.sector ? " · "+esc(h.sector) : ""}</div>` : "";
+  const name = h.community || "（未命名）";
+  const chips = [];
+  if (isSet(h.builtYear)) chips.push(`建成 ${h.builtYear}`);
+  if (triStr(h.hasElevator)) chips.push(triStr(h.hasElevator) === "有" ? "有电梯" : "无电梯");
+  if (isSet(h.totalFloors)) chips.push(`${h.totalFloors} 层`);
+  if (isSet(h.layout)) chips.push(h.layout);
+  if (isSet(h.areaSqm)) chips.push(`${h.areaSqm} ㎡`);
   const brief = [];
   if (isSet(h.subwayKm)) brief.push("地铁 "+h.subwayKm+"km");
   if (isSet(h.commuteAMinutes)) brief.push("通勤A "+h.commuteAMinutes+"分钟");
   if (isSet(h.commuteBMinutes)) brief.push("通勤B "+h.commuteBMinutes+"分钟");
-  return `<div class="card" data-id="${h.id}">
-    <div class="card-top">
-      <h3>${esc(h.community||"（未命名）")}</h3>
-      <button class="star ${h.isFavorite?"on":""}" data-act="fav" title="收藏">★</button>
+  const first = name.trim().charAt(0) || "房";
+  return `<article class="hcard" data-id="${h.id}">
+    <div class="band g${gradIdx(h.community)}">
+      <span class="band-char">${esc(first)}</span>
+      <button class="fav-btn ${h.isFavorite?"on":""}" data-act="fav" title="收藏">★</button>
     </div>
-    ${loc}
-    <div class="meta">
-      <span class="tag ${h.status==="viewed"?"viewed":""}">${h.status==="viewed"?"已看":"待看"}</span>
-      ${h.sector && !showLoc ? `<span class="tag">${esc(h.sector)}</span>` : ""}
-      ${priceStr(h) ? `<b>${esc(priceStr(h))}</b>` : ""}
-      ${h.rating ? `<span class="stars">${starsStr(h.rating)}</span>` : ""}
+    <div class="hcard-body">
+      <h3>${esc(name)}</h3>
+      ${showLoc ? `<div class="hc-loc">${esc([h.city, h.district, h.sector].filter(isSet).join(" · "))}</div>` : ""}
+      ${priceNumStr(h) ? `<div class="hc-price"><span class="pnum">${esc(priceNumStr(h))}</span><span class="punit">元/㎡</span>${(isSet(h.histPriceMin)||isSet(h.histPriceMax)) ? `<span class="hist">历史 ${fmtNum(h.histPriceMin)}–${fmtNum(h.histPriceMax)}</span>` : ""}</div>` : ""}
+      ${isSet(h.totalPriceNote) ? `<div class="hc-total">${esc(h.totalPriceNote)}</div>` : ""}
+      ${chips.length ? `<div class="hc-chips">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>` : ""}
+      ${brief.length ? `<div class="hc-brief">${esc(brief.join(" · "))}</div>` : ""}
+      <div class="hc-foot">
+        <span class="pill ${h.status==="viewed"?"viewed":""}">${h.status==="viewed"?"已看":"待看"}</span>
+        ${h.rating ? `<span class="stars">${starsStr(h.rating)}</span>` : ""}
+        ${h.viewingDate ? `<span>${esc(h.viewingDate)}</span>` : ""}
+        <label><input type="checkbox" data-act="cmp" ${compareSet.has(h.id)?"checked":""}>对比</label>
+      </div>
     </div>
-    ${brief.length ? `<div class="meta">${esc(brief.join(" · "))}</div>` : ""}
-    <div class="card-foot">
-      <label><input type="checkbox" data-act="cmp" ${compareSet.has(h.id)?"checked":""}> 对比</label>
-      <span style="flex:1"></span><span>点卡片看详情</span>
-    </div>
-  </div>`;
+  </article>`;
 }
+function renderAll(){ renderStats(); renderList(); }
 function renderList(){
-  updateFilterSummary();
+  renderFilterSummary();
+  const f = activeFilters();
   const list = filteredHouses();
-  const sort = $("#f-sort").value;
   const main = $("#list-main");
-  if (!list.length) { main.innerHTML = `<div class="empty">没有符合条件的记录</div>`; updateCompareBar(); return; }
-  if (sort !== "default") {
-    const key = { unitPrice: h => isSet(h.unitPriceMin) ? h.unitPriceMin : Infinity,
-                  rating: h => -(h.rating||0),
-                  builtYear: h => -(h.builtYear||0) }[sort];
-    list.sort((a,b) => key(a)-key(b));
-    main.innerHTML = list.map(h => cardHTML(h, true)).join("");
+  if (!list.length) {
+    main.innerHTML = `<div class="group"><div class="grid"><div class="empty"><span class="big">⌂</span>没有符合条件的记录</div></div></div>`;
+    updateCompareBar(); return;
+  }
+  if (f.any) {
+    const items = f.sort !== "default" ? sortHouses(list, f.sort) : list;
+    main.innerHTML = `<div class="group"><div class="grid">${items.map(h => cardHTML(h, true)).join("")}</div></div>`;
   } else {
-    // 城市 › 区 › 板块 分组
-    const groups = new Map();
-    for (const h of list) {
-      const key = [h.city||"未填城市", h.district||"未填区", h.sector||""].join(" › ");
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(h);
-    }
-    main.innerHTML = [...groups.entries()].map(([key, items]) => {
+    main.innerHTML = groupHouses(list).map(([key, items]) => {
       const isCol = collapsed.has(key);
-      return `<div class="group">
-        <button class="group-head" data-group="${esc(key)}">${esc(key)} <span class="cnt">${items.length} 套</span><span class="chev">${isCol?"▸":"▾"}</span></button>
-        ${isCol ? "" : `<div class="group-body">${items.map(h=>cardHTML(h,false)).join("")}</div>`}
-      </div>`;
+      return `<section class="group">
+        <button class="group-head ${isCol?"closed":""}" data-group="${esc(key)}"><span class="t">${esc(key)}</span><span class="cnt">${items.length} 套</span><span class="chev">▾</span></button>
+        ${isCol ? "" : `<div class="grid">${items.map(h=>cardHTML(h,false)).join("")}</div>`}
+      </section>`;
     }).join("");
   }
   updateCompareBar();
@@ -523,13 +701,14 @@ function renderList(){
 $("#list-main").addEventListener("click", async e => {
   const gh = e.target.closest(".group-head");
   if (gh) { const k = gh.dataset.group; collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k); renderList(); return; }
-  const card = e.target.closest(".card"); if (!card) return;
+  const card = e.target.closest(".hcard"); if (!card) return;
   const id = Number(card.dataset.id);
-  const act = e.target.dataset.act;
+  const actEl = e.target.closest("[data-act]");
+  const act = actEl ? actEl.dataset.act : null;
   if (act === "fav") {
     const h = byId(id); if (!h) return;
     h.isFavorite = !h.isFavorite;
-    try { await dbUpdate(h); renderList(); toast(h.isFavorite ? "已收藏" : "已取消收藏"); }
+    try { await dbUpdate(h); renderStats(); renderList(); if (detailId === id) syncDrawerActions(h); toast(h.isFavorite ? "已收藏" : "已取消收藏"); }
     catch(err){ h.isFavorite = !h.isFavorite; toast("保存失败：" + err.message); }
     return;
   }
@@ -552,15 +731,16 @@ function updateCompareBar(){
 $("#btn-compare-clear").addEventListener("click", () => { compareSet.clear(); renderList(); });
 $("#btn-compare-go").addEventListener("click", () => {
   if (compareSet.size < 2) { toast("至少选 2 套再对比"); return; }
-  renderCompare(); switchView("#view-compare");
+  renderCompare();
+  $("#cmp-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
 });
-function switchView(sel){
-  ["#view-list","#view-detail","#view-edit","#view-compare"].forEach(s=>$(s).classList.toggle("hidden", s!==sel));
-  window.scrollTo(0,0);
-}
+function closeCompare(){ $("#cmp-wrap").classList.add("hidden"); if ($("#edit-wrap").classList.contains("hidden")) document.body.classList.remove("locked"); }
+document.querySelectorAll("[data-close-cmp]").forEach(el => el.addEventListener("click", closeCompare));
 $("#btn-add").addEventListener("click", () => openEdit(null));
+$("#btn-add-top").addEventListener("click", () => openEdit(null));
 
-/* ==================== 详情 ==================== */
+/* ==================== 详情抽屉 ==================== */
 function kv(k, v, linkifyIt){
   if (!isSet(v)) return "";
   return `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${linkifyIt ? linkify(v) : esc(v)}</div></div>`;
@@ -568,7 +748,7 @@ function kv(k, v, linkifyIt){
 function amenBlock(title, arr){
   if (!arr || !arr.length) return "";
   const rows = arr.map(a => `<div class="amen">${esc(a.name||"")} <span class="d">${isSet(a.distanceKm)?a.distanceKm+" km":""}${a.note?" · "+esc(a.note):""}</span></div>`).join("");
-  return `<section class="blk"><h4>${esc(title)}</h4>${rows}</section>`;
+  return `<section class="dsec"><h4>${esc(title)}</h4>${rows}</section>`;
 }
 function commuteLine(label, km, min){
   if (!isSet(km) && !isSet(min)) return "";
@@ -577,26 +757,29 @@ function commuteLine(label, km, min){
   if (isSet(min)) parts.push("约"+min+" 分钟");
   return kv(label, parts.join(" · "));
 }
-function openDetail(id){
-  const h = byId(id); if (!h) return;
-  detailId = id;
-  $("#detail-crumb").textContent = [h.city, h.district, h.sector].filter(isSet).join(" › ");
-  $("#detail-stars").textContent = starsStr(h.rating);
-  $("#btn-fav-toggle").textContent = h.isFavorite ? "★ 已收藏" : "☆ 收藏";
-  let html = `<div style="padding:0 14px;max-width:860px;margin:0 auto">
-    <h2 class="detail-title">${esc(h.community||"（未命名）")}</h2>
-    <div class="meta"><span class="tag ${h.status==="viewed"?"viewed":""}">${h.status==="viewed"?"已看":"待看"}</span>
-    ${h.rating ? "评分 "+h.rating+"/5" : ""} ${h.viewingDate ? " · 看房 "+esc(h.viewingDate) : ""}</div></div>`;
-  html += `<main style="padding-top:10px">`;
-  // 价格
+function detailHTML(h){
+  const name = h.community || "（未命名）";
+  let html = `<div class="drawer-band g${gradIdx(h.community)}">
+      <span class="band-char">${esc(name.trim().charAt(0) || "房")}</span>
+      <button class="drawer-close" id="drawer-close">✕</button>
+    </div>
+    <div class="drawer-head">
+      <h2>${esc(name)}</h2>
+      <div class="meta-line">
+        <span class="pill ${h.status==="viewed"?"viewed":""}">${h.status==="viewed"?"已看":"待看"}</span>
+        ${[h.city, h.district, h.sector].filter(isSet).length ? `<span>${esc([h.city, h.district, h.sector].filter(isSet).join(" › "))}</span>` : ""}
+        ${h.rating ? `<span class="stars">${starsStr(h.rating)}</span><span>评分 ${h.rating}/5</span>` : ""}
+        ${h.viewingDate ? `<span>看房 ${esc(h.viewingDate)}</span>` : ""}
+      </div>
+    </div>
+    <div class="drawer-body">`;
   let s = "";
   s += kv("单价", priceStr(h));
   if (isSet(h.histPriceMin) || isSet(h.histPriceMax)) s += kv("历史成交价", `${fmtNum(h.histPriceMin)}–${fmtNum(h.histPriceMax)} 元/㎡`);
   s += kv("总价备注", h.totalPriceNote);
   s += kv("租售比", h.rentSaleRatio);
   s += kv("成交量", h.transactionVolume);
-  if (s) html += `<section class="blk"><h4>价格</h4>${s}</section>`;
-  // 房屋与小区
+  if (s) html += `<section class="dsec"><h4>价格</h4>${s}</section>`;
   s = "";
   s += kv("户型", h.layout);
   s += kv("面积", isSet(h.areaSqm) ? h.areaSqm+" ㎡" : "");
@@ -609,20 +792,18 @@ function openDetail(id){
   s += kv("物业公司", h.propertyCompany);
   s += kv("物业费", h.propertyFee);
   s += kv("产业园", h.industrialPark);
-  if (s) html += `<section class="blk"><h4>房屋与小区</h4>${s}</section>`;
-  // 通勤
+  if (s) html += `<section class="dsec"><h4>房屋与小区</h4>${s}</section>`;
   s = "";
   s += kv("地铁距离", isSet(h.subwayKm) ? h.subwayKm+" km" : "");
   s += kv("公交距离", isSet(h.busKm) ? h.busKm+" km" : "");
   s += commuteLine(h.commuteALabel || "通勤A", h.commuteAKm, h.commuteAMinutes);
   s += commuteLine(h.commuteBLabel || "通勤B", h.commuteBKm, h.commuteBMinutes);
-  if (s) html += `<section class="blk"><h4>交通通勤</h4>${s}</section>`;
-  // 天津：驾车 + 高铁
+  if (s) html += `<section class="dsec"><h4>交通通勤</h4>${s}</section>`;
   if (h.city === "天津" || isSet(h.driveAKm) || isSet(h.hsrStationName) || isSet(h.hsrRideMinutes)) {
     s = "";
     s += commuteLine("驾车到通勤A", h.driveAKm, h.driveAMinutes);
     s += commuteLine("驾车到通勤B", h.driveBKm, h.driveBMinutes);
-    if (s) html += `<section class="blk"><h4>天津 · 驾车通勤</h4>${s}</section>`;
+    if (s) html += `<section class="dsec"><h4>天津 · 驾车通勤</h4>${s}</section>`;
     s = "";
     s += kv("最近高铁站", h.hsrStationName);
     s += commuteLine("到高铁站", h.hsrStationKm, h.hsrStationMinutes);
@@ -635,16 +816,14 @@ function openDetail(id){
     s += kv("高铁全程→通勤A", leg(h.hsrToAMinutes));
     s += kv("北京南站→通勤B", isSet(h.hsrToBMinutes) ? "约"+h.hsrToBMinutes+" 分钟" : "");
     s += kv("高铁全程→通勤B", leg(h.hsrToBMinutes));
-    if (s) html += `<section class="blk"><h4>天津 · 高铁+地铁通勤</h4>${s}</section>`;
+    if (s) html += `<section class="dsec"><h4>天津 · 高铁+地铁通勤</h4>${s}</section>`;
   }
-  // 配套
   html += amenBlock("医院", h.hospitals);
   html += amenBlock("学校", h.schools);
   html += amenBlock("菜市场", h.markets);
   html += amenBlock("商场", h.malls);
   html += amenBlock("公园", h.parks);
-  if (isSet(h.otherAmenities)) html += `<section class="blk"><h4>其他配套</h4>${kv("说明", h.otherAmenities)}</section>`;
-  // 环境与设施
+  if (isSet(h.otherAmenities)) html += `<section class="dsec"><h4>其他配套</h4>${kv("说明", h.otherAmenities)}</section>`;
   s = "";
   s += kv("门禁", triStr(h.hasAccessControl));
   s += kv("车位", triStr(h.hasParking));
@@ -654,39 +833,71 @@ function openDetail(id){
   s += kv("附近垃圾站", triStr(h.hasGarbageStation));
   s += kv("附近高架", triStr(h.nearElevated));
   s += kv("噪音", h.noiseLevel);
-  if (s) html += `<section class="blk"><h4>环境与设施</h4>${s}</section>`;
-  // 看房与中介
+  if (s) html += `<section class="dsec"><h4>环境与设施</h4>${s}</section>`;
   s = "";
   s += kv("看房时间", h.viewingDate);
   s += kv("看房体验", h.viewingExperience);
   s += kv("优点", h.pros);
   s += kv("缺点", h.cons);
-  if (s) html += `<section class="blk"><h4>看房记录</h4>${s}</section>`;
+  if (s) html += `<section class="dsec"><h4>看房记录</h4>${s}</section>`;
   s = "";
   s += kv("中介", h.agentName);
   s += kv("电话", h.agentPhone);
   s += kv("公司", h.agentCompany);
   s += kv("备注", h.agentNote);
-  if (s) html += `<section class="blk"><h4>中介</h4>${s}</section>`;
-  // 备注（收藏房源原文，链接可点）
-  if (isSet(h.notes)) html += `<section class="blk"><h4>备注</h4><div style="white-space:pre-wrap;word-break:break-word;font-size:14px">${linkify(h.notes)}</div></section>`;
-  html += `</main>`;
-  $("#detail-main").innerHTML = html; // 注：detail-main 本身已是 <main>，上面拼的是内层内容
-  switchView("#view-detail");
+  if (s) html += `<section class="dsec"><h4>中介</h4>${s}</section>`;
+  if (isSet(h.notes)) html += `<section class="dsec"><h4>备注</h4><div class="notes-txt">${linkify(h.notes)}</div></section>`;
+  html += `</div>`;
+  return html;
 }
-$("#btn-back").addEventListener("click", () => switchView("#view-list"));
+function syncDrawerActions(h){
+  $("#btn-fav-toggle").textContent = h.isFavorite ? "★ 已收藏" : "☆ 收藏";
+  $("#btn-cmp-toggle").textContent = compareSet.has(h.id) ? "✓ 已加入对比" : "＋ 对比";
+}
+function openDetail(id){
+  const h = byId(id); if (!h) return;
+  detailId = id;
+  $("#drawer-scroll").innerHTML = detailHTML(h);
+  $("#drawer-close").addEventListener("click", closeDrawer);
+  syncDrawerActions(h);
+  $("#drawer-scrim").classList.add("show");
+  $("#drawer").classList.add("open");
+  $("#drawer").setAttribute("aria-hidden", "false");
+  document.body.classList.add("locked");
+  $("#drawer-scroll").scrollTop = 0;
+}
+function closeDrawer(){
+  $("#drawer-scrim").classList.remove("show");
+  $("#drawer").classList.remove("open");
+  $("#drawer").setAttribute("aria-hidden", "true");
+  if ($("#edit-wrap").classList.contains("hidden") && $("#cmp-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+$("#drawer-scrim").addEventListener("click", closeDrawer);
 $("#btn-fav-toggle").addEventListener("click", async () => {
   const h = byId(detailId); if (!h) return;
   h.isFavorite = !h.isFavorite;
-  try { await dbUpdate(h); openDetail(detailId); renderList(); }
+  try { await dbUpdate(h); syncDrawerActions(h); renderStats(); renderList(); toast(h.isFavorite ? "已收藏" : "已取消收藏"); }
   catch(err){ h.isFavorite = !h.isFavorite; toast("保存失败：" + err.message); }
+});
+$("#btn-cmp-toggle").addEventListener("click", () => {
+  const h = byId(detailId); if (!h) return;
+  if (compareSet.has(h.id)) compareSet.delete(h.id);
+  else {
+    if (compareSet.size >= 3) { toast("最多对比 3 套"); return; }
+    compareSet.add(h.id);
+  }
+  syncDrawerActions(h); renderList();
 });
 $("#btn-edit").addEventListener("click", () => openEdit(detailId));
 $("#btn-del").addEventListener("click", async () => {
   const h = byId(detailId); if (!h) return;
   if (!confirm(`确定删除「${h.community}」？删除后无法恢复。`)) return;
-  try { await dbDelete(detailId); houses = houses.filter(x=>x.id!==detailId); compareSet.delete(detailId); switchView("#view-list"); renderList(); toast("已删除"); }
-  catch(err){ toast("删除失败：" + err.message); }
+  try {
+    await dbDelete(detailId);
+    houses = houses.filter(x=>x.id!==detailId);
+    compareSet.delete(detailId); detailId = null;
+    closeDrawer(); renderAll(); toast("已删除");
+  } catch(err){ toast("删除失败：" + err.message); }
 });
 
 /* ==================== 对比 ==================== */
@@ -718,12 +929,18 @@ const CMP_FIELDS = [
 ];
 function renderCompare(){
   const list = [...compareSet].map(byId).filter(Boolean);
-  let html = "<tr><th></th>" + list.map(h=>`<th>${esc(h.community||"")}</th>`).join("") + "</tr>";
-  for (const [label, fn] of CMP_FIELDS)
-    html += `<tr><td class="k">${esc(label)}</td>` + list.map(h=>`<td>${esc(fn(h))}</td>`).join("") + "</tr>";
+  const prices = list.map(h => h.unitPriceMin).filter(isSet).map(Number);
+  const best = prices.length ? Math.min(...prices) : null;
+  let html = "<thead><tr><th></th>" + list.map(h=>`<th>${esc(h.community||"")}</th>`).join("") + "</tr></thead><tbody>";
+  for (const [label, fn] of CMP_FIELDS) {
+    html += `<tr><td class="k">${esc(label)}</td>` + list.map(h => {
+      const isBest = label === "单价" && best !== null && isSet(h.unitPriceMin) && Number(h.unitPriceMin) === best;
+      return `<td class="${isBest?"best":""}">${esc(fn(h))}</td>`;
+    }).join("") + "</tr>";
+  }
+  html += "</tbody>";
   $("#cmp-table").innerHTML = html;
 }
-$("#btn-cmp-back").addEventListener("click", () => switchView("#view-list"));
 
 /* ==================== 编辑表单 ==================== */
 // type: text | num | area(textarea) | tri(三态 有/无/未知) | status
@@ -770,23 +987,26 @@ const FORM_SECTIONS = [
 ];
 const AMEN_FIELDS = [["hospitals","医院"],["schools","学校"],["markets","菜市场"],["malls","商场"],["parks","公园"]];
 
+function triSel(val){ return (val===1||val===true) ? "1" : ((val===0||val===false) ? "0" : ""); }
 function fieldInput(key, label, type, val){
   if (type === "status")
     return `<div class="fld"><label>${label}</label><select id="ef-${key}">
       <option value="viewed" ${val==="viewed"?"selected":""}>已看</option>
       <option value="planned" ${val==="planned"?"selected":""}>待看</option></select></div>`;
-  if (type === "tri")
+  if (type === "tri") {
+    const sel = triSel(val);
     return `<div class="fld"><label>${label}</label><select id="ef-${key}">
-      <option value="" ${!isSet(val)?"selected":""}>未知</option>
-      <option value="1" ${val===1?"selected":""}>有</option>
-      <option value="0" ${val===0?"selected":""}>无</option></select></div>`;
+      <option value="" ${sel===""?"selected":""}>未知</option>
+      <option value="1" ${sel==="1"?"selected":""}>有</option>
+      <option value="0" ${sel==="0"?"selected":""}>无</option></select></div>`;
+  }
   if (type === "area")
-    return `<div class="fld"><label>${label}</label><textarea id="ef-${key}">${esc(val)}</textarea></div>`;
+    return `<div class="fld full"><label>${label}</label><textarea id="ef-${key}">${esc(val)}</textarea></div>`;
   return `<div class="fld"><label>${label}</label><input id="ef-${key}" type="${type==="num"?"number":"text"}" step="any" value="${esc(val)}"></div>`;
 }
 function amenEditor(key, title, arr){
   const rows = (arr||[]).map(a => amenRow(a)).join("");
-  return `<section class="blk"><h4>${title}</h4><div id="amen-${key}">${rows}</div>
+  return `<section class="fsec"><h4>${title}</h4><div id="amen-${key}">${rows}</div>
     <button type="button" class="btn small" data-add-amen="${key}">＋ 添加一行</button></section>`;
 }
 function amenRow(a){
@@ -802,29 +1022,33 @@ function openEdit(id){
   if (!h) return;
   $("#edit-title").textContent = id ? "编辑 · " + (h.community||"") : "新增一套";
   let html = "";
-  html += `<section class="blk"><h4>收藏与评分</h4>
+  html += `<section class="fsec"><h4>收藏与评分</h4><div class="fgrid">
     <div class="fld"><label>收藏</label><select id="ef-isFavorite">
       <option value="0" ${!h.isFavorite?"selected":""}>否</option>
       <option value="1" ${h.isFavorite?"selected":""}>是 ★</option></select></div>
     <div class="fld"><label>评分（1-5）</label><div class="rate-pick" id="rate-pick">
       ${[1,2,3,4,5].map(n=>`<button type="button" data-rate="${n}" class="${h.rating===n?"on":""}">${n}★</button>`).join("")}
       <button type="button" data-rate="0" class="${!h.rating?"on":""}">无</button>
-    </div></div></section>`;
+    </div></div></div></section>`;
   for (const [title, fields] of FORM_SECTIONS)
-    html += `<section class="blk"><h4>${title}</h4>` + fields.map(([k,l,t]) => fieldInput(k,l,t,h[k])).join("") + `</section>`;
+    html += `<section class="fsec"><h4>${title}</h4><div class="fgrid">` + fields.map(([k,l,t]) => fieldInput(k,l,t,h[k])).join("") + `</div></section>`;
   for (const [key, title] of AMEN_FIELDS) html += amenEditor(key, title, h[key]);
-  html += `<section class="blk"><h4>其他配套与备注</h4>
+  html += `<section class="fsec"><h4>其他配套与备注</h4><div class="fgrid">
     ${fieldInput("otherAmenities","其他配套","text",h.otherAmenities)}
-    ${fieldInput("notes","备注（收藏房源明细粘贴在此，链接会自动可点）","area",h.notes)}</section>`;
+    ${fieldInput("notes","备注（收藏房源明细粘贴在此，链接会自动可点）","area",h.notes)}</div></section>`;
   $("#edit-form").innerHTML = html;
   $("#rate-pick").addEventListener("click", e => {
     const b = e.target.closest("[data-rate]"); if (!b) return;
     document.querySelectorAll("#rate-pick button").forEach(x=>x.classList.toggle("on", x===b));
   });
-  switchView("#view-edit");
+  $("#edit-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
 }
-$("#btn-edit-cancel").addEventListener("click", () => switchView(editingId && detailId ? "#view-detail" : "#view-list"));
-// 配套行增删：事件委托，只绑一次
+function closeEdit(){
+  $("#edit-wrap").classList.add("hidden");
+  if (!$("#drawer").classList.contains("open") && $("#cmp-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+document.querySelectorAll("[data-close-edit]").forEach(el => el.addEventListener("click", closeEdit));
 $("#edit-form").addEventListener("click", e => {
   const add = e.target.closest("[data-add-amen]");
   if (add) { $("#amen-"+add.dataset.addAmen).insertAdjacentHTML("beforeend", amenRow(null)); return; }
@@ -865,7 +1089,9 @@ $("#btn-save").addEventListener("click", async () => {
       houses = houses.map(h => h.id === editingId ? rec : h);
       detailId = editingId;
       toast("已保存");
+      closeEdit();
       openDetail(editingId);
+      renderStats(); renderList();
     } else {
       rec.id = Date.now();
       rec.createdAt = new Date().toISOString();
@@ -873,14 +1099,17 @@ $("#btn-save").addEventListener("click", async () => {
       houses.push(rec);
       buildFilterOptions();
       toast("已新增");
-      switchView("#view-list"); renderList();
+      closeEdit();
+      renderAll();
     }
   } catch(err) { toast("保存失败：" + err.message); }
   $("#btn-save").disabled = false;
 });
 
 /* ==================== 导入 houses.json ==================== */
-$("#btn-import").addEventListener("click", () => $("#import-file").click());
+function triggerImport(){ $("#import-file").click(); }
+$("#btn-import").addEventListener("click", triggerImport);
+$("#btn-m-import").addEventListener("click", triggerImport);
 $("#import-file").addEventListener("change", async (e) => {
   const file = e.target.files[0]; e.target.value = "";
   if (!file) return;
@@ -888,7 +1117,6 @@ $("#import-file").addEventListener("change", async (e) => {
   try { arr = JSON.parse(await file.text()); }
   catch { toast("文件不是合法 JSON"); return; }
   if (!Array.isArray(arr) || !arr.length || arr.some(r => !r || !isSet(r.id))) { toast("JSON 格式不对：应为带 id 的记录数组"); return; }
-  // 先查库里已有的 app_id
   const { data: existing, error } = await sb.from("houses").select("app_id");
   if (error) { toast("导入前查询失败：" + error.message); return; }
   const existIds = new Set((existing||[]).map(r => Number(r.app_id)));
@@ -907,7 +1135,14 @@ $("#import-file").addEventListener("change", async (e) => {
   } catch(err) { toast("导入失败：" + err.message); }
 });
 
-/* ==================== 启动 ==================== */
+/* ==================== 全局按键 / 启动 ==================== */
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("#edit-wrap").classList.contains("hidden")) closeEdit();
+  else if (!$("#cmp-wrap").classList.contains("hidden")) closeCompare();
+  else if ($("#drawer").classList.contains("open")) closeDrawer();
+  else closeSidebarMobile();
+});
 init();
 </script>
 </body>
