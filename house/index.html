@@ -94,8 +94,9 @@
   .group-head .cnt{font-size:13px; font-weight:500; color:var(--muted)}
   .group-head .chev{margin-left:auto; color:#c4c4c4; font-size:14px; transition:transform .18s ease}
   .group-head.closed .chev{transform:rotate(-90deg)}
-  .masonry{display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:stretch}
-  @media (max-width:1099px){ .masonry{grid-template-columns:repeat(2,1fr)} }
+  .masonry{display:grid; grid-template-columns:repeat(4,1fr); gap:20px; align-items:stretch}
+  @media (max-width:1399px){ .masonry{grid-template-columns:repeat(3,1fr)} }
+  @media (max-width:899px){ .masonry{grid-template-columns:repeat(2,1fr)} }
   .hcard{display:flex; flex-direction:column; height:100%; background:var(--surface); border-radius:24px; overflow:hidden; box-shadow:var(--shadow-card); cursor:pointer; transition:transform .2s ease, box-shadow .2s ease; animation:fadeUp .4s ease backwards; animation-delay:var(--d,0ms)}
   .hcard:hover{transform:scale(1.01); box-shadow:var(--shadow-hover)}
   @keyframes fadeUp{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
@@ -268,7 +269,7 @@
 <div id="view-app" class="hidden">
   <header class="topbar">
     <div class="tb-inner">
-      <div class="brand"><span class="logo-emoji">🏠</span>栖居</div>
+      <div class="brand"><span class="logo-mark" style="display:inline-flex;flex:none"><svg width="30" height="30" viewBox="0 0 64 64" role="img" aria-label="栖居 logo"><defs><linearGradient id="lgrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b2b2b"/><stop offset="1" stop-color="#050505"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#lgrad2)"/><path d="M17 32.5 L32 19.5 L47 32.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22.5 29.5 V43.5 a2.5 2.5 0 0 0 2.5 2.5 h14 a2.5 2.5 0 0 0 2.5-2.5 V29.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round"/><rect x="29" y="36.5" width="6" height="9.5" rx="3" fill="#E60023"/></svg></span>栖居</div>
       <div class="search-box"><span class="ic">⌕</span><input id="search" type="search" placeholder="搜小区名 / 区 / 板块 / 备注"></div>
       <div class="tb-actions">
         <button class="btn" id="btn-import">导入</button>
