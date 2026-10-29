@@ -76,7 +76,7 @@
   .title-row{display:flex; align-items:baseline; justify-content:space-between; gap:14px; flex-wrap:wrap}
   .title-row h1{font-size:30px; font-weight:700; color:var(--ink); margin:0; letter-spacing:-.01em}
   .stats-line{color:var(--muted); font-size:13.5px; font-variant-numeric:tabular-nums}
-  .filter-area{margin-top:20px; display:flex; flex-direction:column; gap:10px}
+  .filter-area{margin-top:20px; display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:10px}
   .pill-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none}
   .pill-row::-webkit-scrollbar{display:none}
   .mchip{flex:none; height:40px; padding:0 18px; border-radius:999px; background:var(--soft); color:var(--ink); font-size:14.5px; font-weight:600; display:inline-flex; align-items:center; transition:all .15s ease}
@@ -105,7 +105,7 @@
   .dd-opt .dd-txt{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .dd-opt.sel{font-weight:600; color:var(--ink)}
   .dd-opt .dd-check{flex:none; color:var(--red); font-size:13px}
-  .filter-summary{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
+  .filter-summary{display:flex; flex:0 0 100%; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
   .filter-summary .chip-x{background:var(--soft); color:var(--ink); border-radius:999px; padding:3px 11px; font-weight:500}
   .filter-summary button{color:var(--ink); font-weight:600; font-size:13px; text-decoration:underline; padding:2px 4px}
 
@@ -254,9 +254,10 @@
     .pin-price.has-range .pnum{font-size:13.5px}
     .dv-price.range{font-size:22px}
     .tb-filters{padding:2px 14px 10px}
-    .tb-filters .pill-selects{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
-    .tb-filters .pill-selects::-webkit-scrollbar{display:none}
+    .tb-filters .filter-area{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
+    .tb-filters .filter-area::-webkit-scrollbar{display:none}
     .tb-filters .pill-row{flex-wrap:nowrap}
+    .tb-filters .pill-selects{flex-wrap:nowrap}
     .pin-price .ptotal{display:none}
     #drawer{left:0; top:0; width:100vw; height:100dvh; border-radius:0; transform:translateY(14px)}
     #drawer.open{transform:none}
