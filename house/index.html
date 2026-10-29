@@ -135,9 +135,9 @@
   .hcard:hover .cmp-btn{opacity:1; transform:none}
   .cmp-btn.on{opacity:1; transform:none; background:var(--red); color:#fff}
   .pin-body{padding:14px 16px 16px; display:flex; flex-direction:column; flex:1}
-  .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:22px; height:22px; padding-top:1px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:22px; height:29px; padding-top:8px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .pin-loc{display:flex; align-items:center; color:var(--muted); font-size:13px; line-height:20px; height:20px; flex:none; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .pin-price{display:flex; align-items:center; gap:4px; margin-top:10px; height:26px; flex:none; flex-wrap:nowrap; overflow:hidden}
+  .pin-price{display:flex; align-items:center; gap:4px; margin-top:3px; height:26px; flex:none; flex-wrap:nowrap; overflow:hidden}
   .pin-price .pnone{font-size:13.5px; color:var(--muted)}
   .pin-price .pnum{font-size:18px; font-weight:800; color:var(--ink); white-space:nowrap; min-width:0}
   .pin-price .punit{font-size:12px; color:var(--muted); flex:none}
@@ -312,6 +312,7 @@
   form .fld{margin-bottom:11px}
   form .fld.full{grid-column:1 / -1}
   form label{display:block; font-size:12.5px; font-weight:500; color:var(--muted); margin:0 0 5px}
+  form .fld .fld-hint{display:block; font-size:11.5px; font-weight:400; color:var(--muted); margin-top:4px; line-height:1.45}
   .arr-row{display:grid; grid-template-columns:1.4fr .7fr 1fr auto; gap:6px; margin-bottom:6px; align-items:center}
   .arr-row input{padding:8px 11px}
   .arr-del{border-radius:10px; padding:7px 10px; color:var(--danger); font-size:14px}
@@ -917,6 +918,7 @@ function detailHTML(h){
   s += kv("挂牌均价", listUnitStr(h));
   s += kv("挂牌总价", listTotalStr(h));
   s += kv("最近成交价", dealStr(h));
+  s += kv("参考月租金", isSet(h.monthlyRent) ? fmtNum(h.monthlyRent) + " 元/月" : "");
   s += kv("租售比", h.rentSaleRatio);
   s += kv("近30天成交量", h.transactionVolume);
   if (s) html += `<section class="dsec"><h4>价格</h4>${s}</section>`;
@@ -1143,8 +1145,10 @@ function openListingForm(houseId, listingId){
   $("#listing-form").innerHTML = `<section class="fsec"><h4>户型图</h4><div class="lf-plan" id="lf-plan-box"></div></section><section class="fsec"><div class="fgrid">
     ${lfNum("lf-rooms", "室", l?.rooms)}${lfNum("lf-halls", "厅", l?.halls)}
     ${lfNum("lf-baths", "卫", l?.baths)}${lfNum("lf-areaSqm", "面积（㎡）", l?.areaSqm)}
-    <div class="fld"><label>挂牌日期</label><input id="lf-listingDate" type="date" value="${esc(l?.listingDate || "")}"></div>
     ${lfNum("lf-totalPriceWan", "总价（万）", l?.totalPriceWan)}${lfNum("lf-unitPrice", "单价（元/㎡）", l?.unitPrice, "留空按总价÷面积算")}
+    ${lfNum("lf-monthlyRent", "整租（元/月）", l?.monthlyRent)}
+    <div class="fld"><label>租售比</label><input id="lf-rentRatio" type="text" value="${esc(l?.rentRatio ?? "")}"><small class="fld-hint">按总价÷整租自动算，可手动改</small></div>
+    <div class="fld"><label>挂牌日期</label><input id="lf-listingDate" type="date" value="${esc(l?.listingDate || "")}"></div>
     ${lfText("lf-orientation", "朝向", l?.orientation, "如 南北")}
     ${lfText("lf-sunlight", "日照时间", l?.sunlight, "如：全天日照、约4小时、仅上午")}
     <div class="fld"><label>电梯</label><select id="lf-hasElevator">
@@ -1188,6 +1192,12 @@ function openListingForm(houseId, listingId){
     ${lfText("lf-agentNote", "中介备注", l?.agentNote, "", true)}
   </div></section>`;
   document.querySelectorAll("#listing-form [data-floor-pick]").forEach(b => b.addEventListener("click", () => { const inp = $("#lf-floorText"); inp.value = b.dataset.floorPick; inp.focus(); }));
+  const lfAutoRatio = () => {
+    const tp = Number($("#lf-totalPriceWan").value), mr = Number($("#lf-monthlyRent").value);
+    if (tp > 0 && mr > 0) $("#lf-rentRatio").value = "1:" + Math.round(tp * 10000 / mr);
+  };
+  $("#lf-totalPriceWan").addEventListener("input", lfAutoRatio);
+  $("#lf-monthlyRent").addEventListener("input", lfAutoRatio);
   lfPlanRender();
   $("#listing-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
@@ -1240,6 +1250,8 @@ function readListingForm(){
     areaSqm: num("lf-areaSqm"),
     totalPriceWan: num("lf-totalPriceWan"),
     unitPrice: num("lf-unitPrice"),
+    monthlyRent: num("lf-monthlyRent"),
+    rentRatio: $("#lf-rentRatio").value.trim(),
     orientation: $("#lf-orientation").value.trim(),
     sunlight: $("#lf-sunlight").value.trim(),
     hasElevator: $("#lf-hasElevator").value === "" ? null : $("#lf-hasElevator").value === "1",
@@ -1370,6 +1382,8 @@ function openListingDetail(houseId, listingId){
   r = "";
   r += kv("总价", isSet(l.totalPriceWan) ? fmtNum(l.totalPriceWan) + " 万" : "");
   r += kv("单价", isSet(l.unitPrice) ? fmtNum(l.unitPrice) + " 元/㎡" : "");
+  r += kv("整租", isSet(l.monthlyRent) ? fmtNum(l.monthlyRent) + " 元/月" : "");
+  r += kv("租售比", l.rentRatio);
   r += kv("挂牌日期", l.listingDate);
   sec("价格", r);
   r = "";
@@ -1900,7 +1914,8 @@ const FORM_SECTIONS = [
     ["listUnitPriceMin","挂牌均价最低（万/㎡）","num"], ["listUnitPriceMax","挂牌均价最高（万/㎡）","num"],
     ["listTotalPriceMin","挂牌总价下限（万）","num"], ["listTotalPriceMax","挂牌总价上限（万）","num"],
     ["dealPriceMin","最近成交价下限（万）","num"], ["dealPriceMax","最近成交价上限（万）","num"],
-    ["rentSaleRatio","租售比","text"], ["transactionVolume","近30天成交量","text"]
+    ["monthlyRent","参考月租金（元/月）","num"],
+    ["rentSaleRatio","租售比","text","","填月租金后按挂牌总价自动算（双值取平均），可手动改"], ["transactionVolume","近30天成交量","text"]
   ]],
   ["房屋与小区", [
     ["builtYear","建成年","num"], ["buildingType","建筑类型","msel"],
@@ -1933,7 +1948,7 @@ const FORM_SECTIONS = [
 const AMEN_FIELDS = [["hospitals","医院"],["schools","学校"],["markets","菜市场"],["malls","商场"],["parks","公园"]];
 
 function triSel(val){ return (val===1||val===true) ? "1" : ((val===0||val===false) ? "0" : ""); }
-function fieldInput(key, label, type, val, ph){
+function fieldInput(key, label, type, val, ph, hint){
   if (type === "status")
     return `<div class="fld"><label>${label}</label><select id="ef-${key}">
       <option value="viewed" ${val==="viewed"?"selected":""}>已看</option>
@@ -1953,7 +1968,7 @@ function fieldInput(key, label, type, val, ph){
   }
   if (type === "sel")
     return `<div class="fld"><label>${label}</label><select id="ef-${key}">${selOpts(key, val)}</select></div>`;
-  return `<div class="fld"><label>${label}</label><input id="ef-${key}" type="${type==="num"?"number":"text"}" step="any"${ph ? ` placeholder="${esc(ph)}"` : ""} value="${esc(val)}"></div>`;
+  return `<div class="fld"><label>${label}</label><input id="ef-${key}" type="${type==="num"?"number":"text"}" step="any"${ph ? ` placeholder="${esc(ph)}"` : ""} value="${esc(val)}">${hint ? `<small class="fld-hint">${esc(hint)}</small>` : ""}</div>`;
 }
 function amenEditor(key, title, arr){
   const rows = (arr||[]).map(a => amenRow(a)).join("");
@@ -1987,7 +2002,7 @@ function openEdit(id){
     hv.dealPriceMax = hv.recentDealPrice;
   }
   for (const [title, fields] of FORM_SECTIONS)
-    html += `<section class="fsec"><h4>${title}</h4><div class="fgrid">` + fields.map(([k,l,t,ph]) => fieldInput(k,l,t,hv[k],ph)).join("") + `</div></section>`;
+    html += `<section class="fsec"><h4>${title}</h4><div class="fgrid">` + fields.map(([k,l,t,ph,hint]) => fieldInput(k,l,t,hv[k],ph,hint)).join("") + `</div></section>`;
   for (const [key, title] of AMEN_FIELDS) html += amenEditor(key, title, h[key]);
   html += `<section class="fsec"><h4>其他配套与备注</h4><div class="fgrid">
     ${fieldInput("otherAmenities","其他配套","text",h.otherAmenities)}
@@ -1997,6 +2012,19 @@ function openEdit(id){
     const b = e.target.closest("[data-rate]"); if (!b) return;
     document.querySelectorAll("#rate-pick button").forEach(x=>x.classList.toggle("on", x===b));
   });
+  const ratioEl = $("#ef-rentSaleRatio"), rentEl = $("#ef-monthlyRent");
+  const totMinEl = $("#ef-listTotalPriceMin"), totMaxEl = $("#ef-listTotalPriceMax");
+  const autoRatio = () => {
+    if (!ratioEl || !rentEl) return;
+    const rent = Number(rentEl.value);
+    if (!(rent > 0)) return;
+    const pv = el => (el && el.value !== "" ? Number(el.value) : null);
+    const a = pv(totMinEl), b = pv(totMaxEl);
+    const tot = (a !== null && b !== null) ? (a + b) / 2 : (a !== null ? a : b);
+    if (tot === null || !(tot > 0)) return;
+    ratioEl.value = "1:" + Math.round(tot * 10000 / rent);
+  };
+  [rentEl, totMinEl, totMaxEl].forEach(el => { if (el) el.addEventListener("input", autoRatio); });
   $("#edit-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 }
