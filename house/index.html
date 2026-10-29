@@ -135,9 +135,9 @@
   .hcard:hover .cmp-btn{opacity:1; transform:none}
   .cmp-btn.on{opacity:1; transform:none; background:var(--red); color:#fff}
   .pin-body{padding:14px 16px 16px; display:flex; flex-direction:column; flex:1}
-  .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:22px; height:22px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .pin-loc{color:var(--muted); font-size:13px; line-height:20px; height:20px; flex:none; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .pin-price{display:flex; align-items:baseline; gap:4px; margin-top:8px; height:26px; flex:none; flex-wrap:nowrap; overflow:hidden}
+  .pin-body h3{margin:0; font-size:16px; font-weight:700; color:var(--ink); line-height:22px; height:22px; padding-top:1px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pin-loc{display:flex; align-items:center; color:var(--muted); font-size:13px; line-height:20px; height:20px; flex:none; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pin-price{display:flex; align-items:baseline; gap:4px; margin-top:10px; height:26px; flex:none; flex-wrap:nowrap; overflow:hidden}
   .pin-price .pnone{font-size:13.5px; color:var(--muted)}
   .pin-price .pnum{font-size:18px; font-weight:800; color:var(--ink); white-space:nowrap; min-width:0}
   .pin-price .punit{font-size:12px; color:var(--muted); flex:none}
@@ -214,6 +214,7 @@
   .lrow3{display:flex; align-items:center; gap:8px; margin-top:9px; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
   .lpill{font-size:11.5px; font-weight:600; line-height:1.5; padding:2.5px 9px; border-radius:999px; background:#E7F4EC; color:#177245}
   .lpill.off{background:var(--soft); color:var(--muted)}
+  .lrow3 .lpill{margin-left:auto; flex:none}
   .lnote{margin-top:8px; font-size:13px; color:var(--text); white-space:pre-wrap; word-break:break-word}
   .lops{display:flex; gap:6px; margin-top:11px; border-top:1px solid #f4f4f4; padding-top:10px; flex-wrap:wrap}
   .lop{font-size:13px; font-weight:600; color:var(--ink); padding:5px 13px; border-radius:999px; background:var(--soft); text-decoration:none; cursor:pointer; border:none}
@@ -262,6 +263,16 @@
   .lb-bar{display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:999px; padding:8px 10px 8px 18px; box-shadow:var(--shadow-pop); max-width:94vw}
   .lb-name{font-size:13px; color:var(--muted); max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .lb-bar .btn{height:38px; padding:0 18px; flex:none}
+  /* ---------- floor plan (户型图) ---------- */
+  .lcard.has-plan{display:flex; gap:12px}
+  .lcard.has-plan .lcard-main{flex:1; min-width:0}
+  .lthumb{flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; background:var(--soft); align-self:center}
+  .lthumb img{width:100%; height:100%; object-fit:cover; display:block}
+  .plan-box{border-radius:14px; overflow:hidden; background:var(--soft); cursor:pointer; line-height:0}
+  .plan-box img{width:100%; max-height:340px; object-fit:contain; display:block}
+  .plan-ops{display:flex; gap:8px; margin-top:9px}
+  .plan-empty{display:flex; align-items:center; justify-content:center; width:100%; min-height:92px; border:1.5px dashed var(--line); border-radius:14px; color:var(--muted); font-size:14px; font-weight:600}
+  .plan-empty:hover{border-color:#d9d9d9; color:var(--ink)}
 
   /* ---------- modal (edit / compare) ---------- */
   .modal-wrap{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
@@ -319,6 +330,7 @@
     .pin-price .pnum{font-size:16px}
     .pin-price.has-range .pnum{font-size:13.5px}
     .dv-price.range{font-size:22px}
+    .lthumb{width:64px; height:64px}
     .tb-filters{padding:2px 14px 10px}
     .tb-filters .filter-area{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
     .tb-filters .filter-area::-webkit-scrollbar{display:none}
@@ -415,6 +427,7 @@
 </div>
 <input type="file" id="import-file" accept=".json,application/json" class="hidden">
 <input type="file" id="media-file" accept="image/*,video/*" multiple class="hidden">
+<input type="file" id="plan-file" accept="image/*" class="hidden">
 
 <!-- ================= 详情（Pin 弹窗） ================= -->
 <div class="scrim" id="drawer-scrim"></div>
@@ -969,7 +982,7 @@ $("#btn-edit").addEventListener("click", () => openEdit(detailId));
 $("#btn-del").addEventListener("click", async () => {
   const h = byId(detailId); if (!h) return;
   if (!confirm(`确定删除「${h.community}」？删除后无法恢复。`)) return;
-  const mediaPaths = [...getMedia(h).map(m => m.path), ...getListings(h).flatMap(l => getMedia(l).map(m => m.path))];
+  const mediaPaths = [...getMedia(h).map(m => m.path), ...getListings(h).flatMap(l => [...getMedia(l).map(m => m.path), ...(getFloorPlan(l) ? [l.floorPlan.path] : [])])];
   const mediaCleaned = await removeMediaFiles(mediaPaths);
   try {
     await dbDelete(detailId);
@@ -1016,7 +1029,6 @@ function listingCardHTML(l){
   if (layoutParts.length) headParts.push(layoutParts.join(""));
   if (isSet(l.areaSqm)) headParts.push(l.areaSqm + "㎡");
   if (l.orientation) headParts.push(esc(l.orientation));
-  if (l.sunlight) headParts.push("日照 " + esc(l.sunlight));
   let price = "";
   if (isSet(l.totalPriceWan)) price += `<span class="ltotal num">${fmtNum(l.totalPriceWan)} <small>万</small></span>`;
   if (isSet(l.unitPrice)) price += `<span class="lunit num">${fmtNum(l.unitPrice)} 元/㎡</span>`;
@@ -1026,48 +1038,16 @@ function listingCardHTML(l){
   if (floorLabel && isSet(l.totalFloors)) floorStr = floorLabel + " · 共" + l.totalFloors + "层";
   else if (floorLabel) floorStr = floorLabel;
   else if (isSet(l.totalFloors)) floorStr = "共" + l.totalFloors + "层";
-  const rowA = [
-    floorStr ? `<span>${esc(floorStr)}</span>` : "",
-    l.hasElevator === true ? "<span>有电梯</span>" : (l.hasElevator === false ? "<span>无电梯</span>" : ""),
-    l.elevatorRatio ? `<span>${esc(l.elevatorRatio)}</span>` : ""
-  ].filter(Boolean).join("");
-  const propParts = [];
-  if (l.listingDate) propParts.push("挂牌 " + l.listingDate);
-  if (l.registeredDate) propParts.push("登记 " + l.registeredDate);
-  if (l.houseType) propParts.push(l.houseType);
-  if (l.houseAge) propParts.push(l.houseAge);
-  if (l.ownership) propParts.push(l.ownership);
-  if (l.mortgage) propParts.push(l.mortgage);
-  const rowB = [
-    l.decoration ? `<span>装修：${esc(l.decoration)}</span>` : "",
-    `<span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>`,
-    LISTING_SOURCE[l.source] ? `<span>${esc(LISTING_SOURCE[l.source])}</span>` : ""
-  ].filter(Boolean).join("");
-  const viewRows = [];
-  if (l.viewingDate) viewRows.push(`<div class="lview-row">看房 ${esc(l.viewingDate)}</div>`);
-  if (l.viewingExperience) viewRows.push(`<div class="lview-row">体验：${esc(l.viewingExperience)}</div>`);
-  if (l.pros) viewRows.push(`<div class="lview-row">优点：${esc(l.pros)}</div>`);
-  if (l.cons) viewRows.push(`<div class="lview-row">缺点：${esc(l.cons)}</div>`);
-  const agParts = [];
-  if (l.agentName) agParts.push(esc(l.agentName));
-  if (l.agentCompany) agParts.push(esc(l.agentCompany));
-  if (l.agentPhone) agParts.push(`<a href="tel:${esc(l.agentPhone)}">${esc(l.agentPhone)}</a>`);
-  if (agParts.length) viewRows.push(`<div class="lview-row">中介：${agParts.join(" · ")}</div>`);
-  if (l.agentNote) viewRows.push(`<div class="lview-row">中介备注：${esc(l.agentNote)}</div>`);
-  const viewBlock = viewRows.length ? `<div class="lview"><div class="lview-h">看房与中介</div>${viewRows.join("")}</div>` : "";
-  return `<div class="lcard${off ? " dim" : ""}" data-lview="${esc(l.id)}" title="点击查看房源详情">
-    <div class="lrow1"><span>${headParts.join(" · ") || "户型未填"}</span>${l.isFavorite ? '<span class="lfav">★</span>' : ""}</div>
+  const infoParts = [];
+  if (floorStr) infoParts.push(`<span>${esc(floorStr)}</span>`);
+  if (l.hasElevator === true) infoParts.push("<span>有电梯</span>");
+  else if (l.hasElevator === false) infoParts.push("<span>无电梯</span>");
+  const plan = getFloorPlan(l);
+  const thumb = plan ? `<div class="lthumb" data-plan-thumb data-mpath="${esc(plan.path)}"><img alt="" loading="lazy"></div>` : "";
+  return `<div class="lcard${off ? " dim" : ""}${plan ? " has-plan" : ""}" data-lview="${esc(l.id)}" title="点击查看房源详情">
+    <div class="lcard-main"><div class="lrow1"><span>${headParts.join(" · ") || "户型未填"}</span>${l.isFavorite ? '<span class="lfav">★</span>' : ""}</div>
     <div class="lrow2">${price}</div>
-    ${rowA ? `<div class="lrow3">${rowA}</div>` : ""}
-    <div class="lrow3">${rowB}</div>
-    ${propParts.length ? `<div class="lrow3"><span>${propParts.map(esc).join(" · ")}</span></div>` : ""}
-    ${l.note ? `<div class="lnote">${esc(l.note)}</div>` : ""}
-    ${viewBlock}
-    <div class="lops">
-      ${l.url ? `<a class="lop" href="${esc(l.url)}" target="_blank" rel="noopener">查看贝壳 ↗</a>` : ""}
-      <button type="button" class="lop" data-ledit="${esc(l.id)}">编辑</button>
-      <button type="button" class="lop danger" data-ldel="${esc(l.id)}">删除</button>
-    </div>
+    <div class="lrow3">${infoParts.join("")}<span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span></div></div>${thumb}
   </div>`;
 }
 let listingsOpen = false;
@@ -1234,7 +1214,9 @@ async function deleteListing(houseId, listingId){
   const h = byId(houseId); if (!h) return;
   if (!confirm("确定删除这套房源？")) return;
   const delTarget = getListings(h).find(x => String(x.id) === String(listingId));
-  await removeMediaFiles(getMedia(delTarget).map(m => m.path));
+  const delPaths = [...getMedia(delTarget).map(m => m.path)];
+  if (getFloorPlan(delTarget)) delPaths.push(delTarget.floorPlan.path);
+  await removeMediaFiles(delPaths);
   const oldList = getListings(h);
   h.listings = oldList.filter(x => String(x.id) !== String(listingId));
   try {
@@ -1272,6 +1254,7 @@ function openListingDetail(houseId, listingId){
   $("#ldetail-title").textContent = (h.community || "房源详情") + (layout ? " · " + layout : "");
   const off = l.status === "stopped" || l.status === "sold";
   let body = `<div class="ld-sub"><span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>${l.isFavorite ? '<span class="lfav">★ 重点关注</span>' : ""}</div>`;
+  body += floorPlanSectionHTML(l);
   const sec = (title, rows) => { if (rows) body += `<section class="dsec"><h4>${title}</h4>${rows}</section>`; };
   let r = "";
   r += kv("户型", layout);
@@ -1412,7 +1395,7 @@ async function signedUrls(paths){
 }
 async function hydrateMedia(root){
   if (!root) return;
-  const els = [...root.querySelectorAll("[data-mthumb]")];
+  const els = [...root.querySelectorAll("[data-mthumb], [data-plan-thumb], [data-plan-img]")];
   if (!els.length) return;
   const urls = await signedUrls(els.map(el => el.dataset.mpath));
   for (const el of els) {
@@ -1569,6 +1552,89 @@ async function removeMediaFiles(paths){
     return !error;
   } catch (e) { return false; }
 }
+/* ==================== 户型图（房源单张 · 复用媒体管线） ==================== */
+function getFloorPlan(l){ return l && l.floorPlan && l.floorPlan.path ? l.floorPlan : null; }
+function floorPlanSectionHTML(l){
+  const plan = getFloorPlan(l);
+  if (!plan) return `<section class="dsec plansec"><h4>户型图</h4><button type="button" class="plan-empty" data-plan-upload>＋ 上传户型图</button></section>`;
+  return `<section class="dsec plansec"><h4>户型图</h4><div class="plan-box" data-plan-img data-mpath="${esc(plan.path)}" data-plan-view title="点击看大图"><img alt="户型图" loading="lazy"></div><div class="plan-ops"><button type="button" class="btn small" data-plan-upload>替换</button><button type="button" class="btn small danger" data-plan-del>删除</button></div></section>`;
+}
+let planCtx = null;
+function startPlanUpload(ctx){
+  planCtx = ctx;
+  const inp = $("#plan-file");
+  inp.value = "";
+  inp.click();
+}
+async function uploadFloorPlanFile(h, l, file){
+  const type = file.type || "";
+  if (!type.startsWith("image/")) { toast("户型图只能上传图片"); return null; }
+  const c = await compressImageFile(file);
+  const ext = c.ext || "jpg";
+  const mid = "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const path = `c${h.id}/l${l.id}/plan-${mid}.${ext}`;
+  const { error } = await sb.storage.from(MEDIA_BUCKET).upload(path, c.blob, { upsert: false, contentType: c.blob.type || type || undefined });
+  if (error) throw error;
+  return { path, size: c.size, createdAt: new Date().toISOString() };
+}
+$("#plan-file").addEventListener("change", async e => {
+  const file = (e.target.files || [])[0];
+  const ctx = planCtx; planCtx = null; e.target.value = "";
+  if (!ctx || !file) return;
+  const { h, l } = resolveMediaCtx(ctx);
+  if (!h || !l) return;
+  const btns = [...document.querySelectorAll('#ldetail-body [data-plan-upload]')];
+  btns.forEach(b => { b.disabled = true; });
+  const oldPlan = getFloorPlan(l);
+  let item = null;
+  try { item = await uploadFloorPlanFile(h, l, file); }
+  catch (err) {
+    if (isBucketMissingErr(err)) toast("媒体存储还没初始化，请先在 Supabase 运行 storage.sql");
+    else toast("户型图上传失败：" + err.message);
+    refreshMediaViews(ctx, h);
+    return;
+  }
+  if (!item) { refreshMediaViews(ctx, h); return; }
+  l.floorPlan = item;
+  try { await dbUpdate(h); }
+  catch (err) {
+    l.floorPlan = oldPlan;
+    removeMediaFiles([item.path]);
+    toast("保存失败：" + err.message);
+    refreshMediaViews(ctx, h);
+    return;
+  }
+  if (oldPlan && oldPlan.path !== item.path) {
+    const cleaned = await removeMediaFiles([oldPlan.path]);
+    toast(cleaned ? "户型图已更新" : "户型图已更新（旧图未能清理）");
+  } else toast("户型图已上传");
+  refreshMediaViews(ctx, h);
+});
+async function removeFloorPlan(ctx){
+  const { h, l } = resolveMediaCtx(ctx);
+  if (!h || !l) return;
+  const plan = getFloorPlan(l); if (!plan) return;
+  if (!confirm("确定删除这张户型图？")) return;
+  l.floorPlan = null;
+  try { await dbUpdate(h); }
+  catch (err) { l.floorPlan = plan; toast("保存失败：" + err.message); return; }
+  closeLightbox();
+  const cleaned = await removeMediaFiles([plan.path]);
+  refreshMediaViews(ctx, h);
+  toast(cleaned ? "户型图已删除" : "户型图已删除（文件未能清理）");
+}
+async function openPlanLightbox(ctx){
+  const { l } = resolveMediaCtx(ctx);
+  if (!l) return;
+  const plan = getFloorPlan(l); if (!plan) return;
+  lightboxCtx = { houseId: ctx.houseId, listingId: ctx.listingId || null, mediaId: null, plan: true };
+  const urls = await signedUrls([plan.path]);
+  const u = urls.get(plan.path);
+  $("#lb-stage").innerHTML = u ? `<img src="${esc(u)}" alt="">` : `<div class="lb-miss">文件加载失败，请稍后重试</div>`;
+  $("#lb-name").textContent = "户型图";
+  $("#media-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
 $("#drawer-scroll").addEventListener("click", e => {
   const up = e.target.closest('[data-mupload="c"]');
   if (up) { if (detailId) startMediaUpload({ houseId: detailId, listingId: null }); return; }
@@ -1576,13 +1642,23 @@ $("#drawer-scroll").addEventListener("click", e => {
   if (th && detailId) openLightbox({ houseId: detailId, listingId: null }, th.dataset.mid);
 });
 $("#ldetail-body").addEventListener("click", e => {
+  const pu = e.target.closest("[data-plan-upload]");
+  if (pu) { if (ldetailCtx) startPlanUpload({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }); return; }
+  const pd = e.target.closest("[data-plan-del]");
+  if (pd) { if (ldetailCtx) removeFloorPlan({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }); return; }
+  const pv = e.target.closest("[data-plan-view]");
+  if (pv) { if (ldetailCtx) openPlanLightbox({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }); return; }
   const up = e.target.closest('[data-mupload="l"]');
   if (up) { if (ldetailCtx) startMediaUpload({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }); return; }
   const th = e.target.closest("[data-mthumb]");
   if (th && ldetailCtx) openLightbox({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }, th.dataset.mid);
 });
 document.querySelectorAll("[data-close-media]").forEach(el => el.addEventListener("click", closeLightbox));
-$("#lb-del").addEventListener("click", () => { if (lightboxCtx) deleteMediaItem(lightboxCtx, lightboxCtx.mediaId); });
+$("#lb-del").addEventListener("click", () => {
+  if (!lightboxCtx) return;
+  if (lightboxCtx.plan) removeFloorPlan(lightboxCtx);
+  else deleteMediaItem(lightboxCtx, lightboxCtx.mediaId);
+});
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && lightboxCtx) { e.stopPropagation(); closeLightbox(); }
 }, true);
