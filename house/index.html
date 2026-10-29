@@ -197,6 +197,31 @@
   .drawer-actions .btn{flex:1; height:46px}
   #btn-fav-toggle.fav-on{color:var(--red); border-color:var(--red)}
 
+  /* ---------- detail listings ---------- */
+  .lsec-head{display:flex; align-items:center; gap:9px; margin:0 0 10px}
+  .lsec-head h4{margin:0}
+  .lsec-head .lcnt{font-size:12.5px; color:var(--muted)}
+  .lsec-head .btn{margin-left:auto; flex:none}
+  .lcard{border:1px solid var(--line); border-radius:16px; padding:13px 15px 12px; margin-bottom:10px; background:var(--surface)}
+  .lcard.dim{opacity:.55}
+  .lrow1{display:flex; align-items:center; gap:6px; font-size:14.5px; font-weight:600; color:var(--ink)}
+  .lrow1 .lfav{margin-left:auto; color:var(--gold); font-size:15px; flex:none}
+  .lrow2{display:flex; align-items:baseline; gap:9px; margin-top:5px; flex-wrap:wrap}
+  .lrow2 .ltotal{font-size:21px; font-weight:800; color:var(--ink)}
+  .lrow2 .ltotal small{font-size:12.5px; font-weight:600; color:var(--muted)}
+  .lrow2 .lunit{font-size:13px; color:var(--muted)}
+  .lrow2 .lprice-none{font-size:13.5px; color:var(--muted)}
+  .lrow3{display:flex; align-items:center; gap:8px; margin-top:9px; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
+  .lpill{font-size:11.5px; font-weight:600; line-height:1.5; padding:2.5px 9px; border-radius:999px; background:#E7F4EC; color:#177245}
+  .lpill.off{background:var(--soft); color:var(--muted)}
+  .lnote{margin-top:8px; font-size:13px; color:var(--text); white-space:pre-wrap; word-break:break-word}
+  .lops{display:flex; gap:6px; margin-top:11px; border-top:1px solid #f4f4f4; padding-top:10px; flex-wrap:wrap}
+  .lop{font-size:13px; font-weight:600; color:var(--ink); padding:5px 13px; border-radius:999px; background:var(--soft); text-decoration:none; cursor:pointer; border:none}
+  .lop:hover{background:#e2e2e2}
+  .lop.danger{color:var(--danger); background:var(--danger-soft)}
+  .lop.danger:hover{background:#fbe3e3}
+  .lempty{font-size:13.5px; color:var(--muted); padding:2px 0 8px}
+
   /* ---------- modal (edit / compare) ---------- */
   .modal-wrap{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
   .modal-scrim{position:absolute; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(3px)}
@@ -371,6 +396,19 @@
     <div class="modal-foot">
       <button class="btn" data-close-edit>取消</button>
       <button class="btn primary" id="btn-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 房源编辑弹窗 ================= -->
+<div class="modal-wrap hidden" id="listing-wrap">
+  <div class="modal-scrim" data-close-listing></div>
+  <div class="modal" style="width:640px">
+    <div class="modal-head"><h2 id="listing-title">添加房源</h2><button class="modal-close" data-close-listing>✕</button></div>
+    <div class="modal-body"><form id="listing-form"></form></div>
+    <div class="modal-foot">
+      <button class="btn" data-close-listing>取消</button>
+      <button class="btn primary" id="btn-listing-save">保存</button>
     </div>
   </div>
 </div>
@@ -758,6 +796,7 @@ function detailHTML(h){
   s += kv("物业费", h.propertyFee);
   s += kv("产业园", h.industrialPark);
   if (s) html += `<section class="dsec"><h4>房屋与小区</h4>${s}</section>`;
+  html += listingsSectionHTML(h);
   s = "";
   s += kv("地铁距离", isSet(h.subwayKm) ? h.subwayKm+" km" : "");
   s += kv("公交距离", isSet(h.busKm) ? h.busKm+" km" : "");
@@ -865,6 +904,180 @@ $("#btn-del").addEventListener("click", async () => {
     compareSet.delete(detailId); detailId = null;
     closeDrawer(); renderAll(); toast("已删除");
   } catch(err){ toast("删除失败：" + err.message); }
+});
+
+
+/* ==================== 房源（社区内 listings） ==================== */
+const LISTING_STATUS = { onsale: "在售", stopped: "已停售", sold: "已成交" };
+const LISTING_SOURCE = { beike: "贝壳收藏", agent: "中介推荐", manual: "自己录入" };
+function getListings(h){ return h && Array.isArray(h.listings) ? h.listings : []; }
+function sortedListings(h){
+  return getListings(h).slice().sort((a, b) => {
+    if (!!a.isFavorite !== !!b.isFavorite) return a.isFavorite ? -1 : 1;
+    const pa = isSet(a.totalPriceWan) ? Number(a.totalPriceWan) : Infinity;
+    const pb = isSet(b.totalPriceWan) ? Number(b.totalPriceWan) : Infinity;
+    if (pa !== pb) return pa - pb;
+    return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+  });
+}
+function listingCardHTML(l){
+  const off = l.status === "stopped" || l.status === "sold";
+  const layoutParts = [];
+  if (isSet(l.rooms)) layoutParts.push(l.rooms + "室");
+  if (isSet(l.halls)) layoutParts.push(l.halls + "厅");
+  if (isSet(l.baths)) layoutParts.push(l.baths + "卫");
+  const headParts = [];
+  if (layoutParts.length) headParts.push(layoutParts.join(""));
+  if (isSet(l.areaSqm)) headParts.push(l.areaSqm + "㎡");
+  if (l.orientation) headParts.push(esc(l.orientation));
+  let price = "";
+  if (isSet(l.totalPriceWan)) price += `<span class="ltotal num">${fmtNum(l.totalPriceWan)} <small>万</small></span>`;
+  if (isSet(l.unitPrice)) price += `<span class="lunit num">${fmtNum(l.unitPrice)} 元/㎡</span>`;
+  if (!price) price = `<span class="lprice-none">价格未填</span>`;
+  let floorStr = "";
+  if (isSet(l.floor) && isSet(l.totalFloors)) floorStr = l.floor + "/" + l.totalFloors + "层";
+  else if (isSet(l.totalFloors)) floorStr = "共" + l.totalFloors + "层";
+  else if (isSet(l.floor)) floorStr = "第" + l.floor + "层";
+  const row3 = [
+    floorStr ? `<span>${esc(floorStr)}</span>` : "",
+    `<span class="lpill${off ? " off" : ""}">${esc(LISTING_STATUS[l.status] || "在售")}</span>`,
+    LISTING_SOURCE[l.source] ? `<span>${esc(LISTING_SOURCE[l.source])}</span>` : ""
+  ].filter(Boolean).join("");
+  return `<div class="lcard${off ? " dim" : ""}">
+    <div class="lrow1"><span>${headParts.join(" · ") || "户型未填"}</span>${l.isFavorite ? '<span class="lfav">★</span>' : ""}</div>
+    <div class="lrow2">${price}</div>
+    <div class="lrow3">${row3}</div>
+    ${l.note ? `<div class="lnote">${esc(l.note)}</div>` : ""}
+    <div class="lops">
+      ${l.url ? `<a class="lop" href="${esc(l.url)}" target="_blank" rel="noopener">查看贝壳 ↗</a>` : ""}
+      <button type="button" class="lop" data-ledit="${esc(l.id)}">编辑</button>
+      <button type="button" class="lop danger" data-ldel="${esc(l.id)}">删除</button>
+    </div>
+  </div>`;
+}
+function listingsSectionHTML(h){
+  const list = sortedListings(h);
+  return `<section class="dsec">
+    <div class="lsec-head"><h4>房源</h4><span class="lcnt">${list.length} 套</span><button type="button" class="btn small primary" data-ladd>＋ 加一套</button></div>
+    ${list.length ? list.map(listingCardHTML).join("") : `<div class="lempty">暂无房源</div>`}
+  </section>`;
+}
+function rerenderDrawer(h){
+  if (!h || detailId !== h.id || !$("#drawer").classList.contains("open")) return;
+  const info = $("#drawer-scroll .detail-info");
+  const st = info ? info.scrollTop : 0;
+  $("#drawer-scroll").innerHTML = detailHTML(h);
+  syncDrawerActions(h);
+  const info2 = $("#drawer-scroll .detail-info");
+  if (info2) info2.scrollTop = st;
+}
+let listingCtx = null;
+function lfNum(id, label, val, ph){
+  return `<div class="fld"><label>${label}</label><input id="${id}" type="number" step="any"${ph ? ` placeholder="${ph}"` : ""} value="${esc(val ?? "")}"></div>`;
+}
+function lfText(id, label, val, ph, full){
+  return `<div class="fld${full ? " full" : ""}"><label>${label}</label><input id="${id}" type="text"${ph ? ` placeholder="${ph}"` : ""} value="${esc(val ?? "")}"></div>`;
+}
+function openListingForm(houseId, listingId){
+  const h = byId(houseId); if (!h) return;
+  const l = listingId ? getListings(h).find(x => String(x.id) === String(listingId)) : null;
+  listingCtx = { houseId, listingId: l ? l.id : null };
+  $("#listing-title").textContent = (l ? "编辑房源" : "添加房源") + " · " + (h.community || "");
+  const st = l?.status || "onsale", so = l?.source || "manual";
+  $("#listing-form").innerHTML = `<section class="fsec"><div class="fgrid">
+    ${lfNum("lf-rooms", "室", l?.rooms)}${lfNum("lf-halls", "厅", l?.halls)}
+    ${lfNum("lf-baths", "卫", l?.baths)}${lfNum("lf-areaSqm", "面积（㎡）", l?.areaSqm)}
+    ${lfNum("lf-totalPriceWan", "总价（万）", l?.totalPriceWan)}${lfNum("lf-unitPrice", "单价（元/㎡）", l?.unitPrice, "留空按总价÷面积算")}
+    ${lfText("lf-orientation", "朝向", l?.orientation, "如 南北")}
+    ${lfNum("lf-floor", "楼层", l?.floor)}${lfNum("lf-totalFloors", "总层数", l?.totalFloors)}
+    <div class="fld"><label>状态</label><select id="lf-status">
+      <option value="onsale" ${st === "onsale" ? "selected" : ""}>在售</option>
+      <option value="stopped" ${st === "stopped" ? "selected" : ""}>已停售</option>
+      <option value="sold" ${st === "sold" ? "selected" : ""}>已成交</option></select></div>
+    <div class="fld"><label>来源</label><select id="lf-source">
+      <option value="beike" ${so === "beike" ? "selected" : ""}>贝壳收藏</option>
+      <option value="agent" ${so === "agent" ? "selected" : ""}>中介推荐</option>
+      <option value="manual" ${so === "manual" ? "selected" : ""}>自己录入</option></select></div>
+    <div class="fld"><label>重点关注</label><select id="lf-isFavorite">
+      <option value="0" ${!l?.isFavorite ? "selected" : ""}>否</option>
+      <option value="1" ${l?.isFavorite ? "selected" : ""}>是 ★</option></select></div>
+    ${lfText("lf-url", "贝壳链接", l?.url, "https://…", true)}
+    ${lfText("lf-note", "备注（一句话）", l?.note, "如 业主急售", true)}
+  </div></section>`;
+  $("#listing-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
+function closeListing(){
+  $("#listing-wrap").classList.add("hidden");
+  listingCtx = null;
+  if (!$("#drawer").classList.contains("open") && $("#edit-wrap").classList.contains("hidden") && $("#cmp-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+document.querySelectorAll("[data-close-listing]").forEach(el => el.addEventListener("click", closeListing));
+function readListingForm(){
+  const num = id => { const v = $("#" + id).value.trim(); return v === "" ? null : Number(v); };
+  const l = {
+    rooms: num("lf-rooms"), halls: num("lf-halls"), baths: num("lf-baths"),
+    areaSqm: num("lf-areaSqm"),
+    totalPriceWan: num("lf-totalPriceWan"),
+    unitPrice: num("lf-unitPrice"),
+    orientation: $("#lf-orientation").value.trim(),
+    floor: num("lf-floor"), totalFloors: num("lf-totalFloors"),
+    status: $("#lf-status").value,
+    source: $("#lf-source").value,
+    url: $("#lf-url").value.trim(),
+    isFavorite: $("#lf-isFavorite").value === "1",
+    note: $("#lf-note").value.trim()
+  };
+  if (l.unitPrice === null && l.totalPriceWan !== null && l.areaSqm) l.unitPrice = Math.round(l.totalPriceWan * 10000 / l.areaSqm);
+  return l;
+}
+$("#btn-listing-save").addEventListener("click", async () => {
+  if (!listingCtx) return;
+  const h = byId(listingCtx.houseId); if (!h) return;
+  const data = readListingForm();
+  const oldList = getListings(h);
+  let newList;
+  if (listingCtx.listingId) {
+    const orig = oldList.find(x => String(x.id) === String(listingCtx.listingId)) || {};
+    newList = oldList.map(x => String(x.id) === String(listingCtx.listingId) ? { ...orig, ...data } : x);
+  } else {
+    newList = [...oldList, { id: "l" + Date.now() + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString(), ...data }];
+  }
+  h.listings = newList;
+  $("#btn-listing-save").disabled = true;
+  try {
+    await dbUpdate(h);
+    closeListing();
+    rerenderDrawer(h);
+    renderStats(); renderList();
+    toast("房源已保存");
+  } catch (err) {
+    h.listings = oldList;
+    toast("保存失败：" + err.message);
+  }
+  $("#btn-listing-save").disabled = false;
+});
+async function deleteListing(houseId, listingId){
+  const h = byId(houseId); if (!h) return;
+  if (!confirm("确定删除这套房源？")) return;
+  const oldList = getListings(h);
+  h.listings = oldList.filter(x => String(x.id) !== String(listingId));
+  try {
+    await dbUpdate(h);
+    rerenderDrawer(h);
+    renderStats(); renderList();
+    toast("已删除");
+  } catch (err) {
+    h.listings = oldList;
+    toast("删除失败：" + err.message);
+  }
+}
+$("#drawer-scroll").addEventListener("click", e => {
+  if (e.target.closest("[data-ladd]")) { if (detailId) openListingForm(detailId, null); return; }
+  const ed = e.target.closest("[data-ledit]");
+  if (ed) { openListingForm(detailId, ed.dataset.ledit); return; }
+  const del = e.target.closest("[data-ldel]");
+  if (del) { deleteListing(detailId, del.dataset.ldel); return; }
 });
 
 /* ==================== 对比 ==================== */
@@ -1105,7 +1318,8 @@ $("#import-file").addEventListener("change", async (e) => {
 /* ==================== 全局按键 / 启动 ==================== */
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if (!$("#edit-wrap").classList.contains("hidden")) closeEdit();
+  if (!$("#listing-wrap").classList.contains("hidden")) closeListing();
+  else if (!$("#edit-wrap").classList.contains("hidden")) closeEdit();
   else if (!$("#cmp-wrap").classList.contains("hidden")) closeCompare();
   else if ($("#drawer").classList.contains("open")) closeDrawer();
 });
