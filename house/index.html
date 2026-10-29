@@ -242,6 +242,26 @@
   .lfloor-pills{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px}
   .lfloor-pills button{font-size:12px; font-weight:500; color:var(--muted); background:var(--soft); border:none; border-radius:999px; padding:4px 11px; cursor:pointer}
   .lfloor-pills button:hover{background:#e2e2e2; color:var(--ink)}
+  /* ---------- detail media （实拍） ---------- */
+  .msec-head{display:flex; align-items:center; gap:9px; margin:0 0 10px}
+  .msec-head h4{margin:0}
+  .msec-head .musage{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .msec-head .btn{margin-left:auto; flex:none}
+  .mgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:8px}
+  .mthumb{position:relative; aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:var(--soft); cursor:pointer}
+  .mthumb img, .mthumb video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+  .mthumb .play-badge{position:absolute; right:6px; bottom:6px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; pointer-events:none}
+  .mempty{font-size:13.5px; color:var(--muted); padding:2px 0 8px}
+  /* ---------- media lightbox ---------- */
+  #media-wrap{z-index:110}
+  .lb-box{position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:94vw}
+  .lb-stage{display:flex; align-items:center; justify-content:center; min-height:120px}
+  .lb-stage img{max-width:92vw; max-height:76dvh; border-radius:16px; box-shadow:var(--shadow-pop); object-fit:contain}
+  .lb-stage video{max-width:92vw; max-height:76dvh; border-radius:16px; box-shadow:var(--shadow-pop); background:#000}
+  .lb-miss{color:#fff; font-size:14px; padding:30px 10px}
+  .lb-bar{display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:999px; padding:8px 10px 8px 18px; box-shadow:var(--shadow-pop); max-width:94vw}
+  .lb-name{font-size:13px; color:var(--muted); max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .lb-bar .btn{height:38px; padding:0 18px; flex:none}
 
   /* ---------- modal (edit / compare) ---------- */
   .modal-wrap{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
@@ -394,6 +414,7 @@
   </div>
 </div>
 <input type="file" id="import-file" accept=".json,application/json" class="hidden">
+<input type="file" id="media-file" accept="image/*,video/*" multiple class="hidden">
 
 <!-- ================= 详情（Pin 弹窗） ================= -->
 <div class="scrim" id="drawer-scrim"></div>
@@ -454,6 +475,19 @@
       <a class="btn hidden" id="ldetail-url" href="#" target="_blank" rel="noopener" style="text-decoration:none">查看贝壳 ↗</a>
       <button class="btn danger" id="ldetail-del">删除</button>
       <button class="btn primary" id="ldetail-edit">编辑</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 实拍灯箱 ================= -->
+<div class="modal-wrap hidden" id="media-wrap">
+  <div class="modal-scrim" data-close-media></div>
+  <div class="lb-box">
+    <div class="lb-stage" id="lb-stage"></div>
+    <div class="lb-bar">
+      <span class="lb-name" id="lb-name"></span>
+      <button class="btn danger" id="lb-del">删除</button>
+      <button class="btn" data-close-media>关闭</button>
     </div>
   </div>
 </div>
@@ -839,6 +873,7 @@ function detailHTML(h){
   s += kv("产业园", h.industrialPark);
   if (s) html += `<section class="dsec"><h4>房屋与小区</h4>${s}</section>`;
   html += listingsSectionHTML(h);
+  html += mediaSectionHTML(h, "c");
   s = "";
   s += kv("地铁距离", isSet(h.subwayKm) ? h.subwayKm+" km" : "");
   s += kv("公交距离", isSet(h.busKm) ? h.busKm+" km" : "");
@@ -905,6 +940,7 @@ function openDetail(id){
   document.body.classList.add("locked");
   const info = $("#drawer-scroll .detail-info");
   if (info) info.scrollTop = 0;
+  hydrateMedia($("#drawer-scroll"));
 }
 function closeDrawer(){
   $("#drawer-scrim").classList.remove("show");
@@ -933,11 +969,13 @@ $("#btn-edit").addEventListener("click", () => openEdit(detailId));
 $("#btn-del").addEventListener("click", async () => {
   const h = byId(detailId); if (!h) return;
   if (!confirm(`确定删除「${h.community}」？删除后无法恢复。`)) return;
+  const mediaPaths = [...getMedia(h).map(m => m.path), ...getListings(h).flatMap(l => getMedia(l).map(m => m.path))];
+  const mediaCleaned = await removeMediaFiles(mediaPaths);
   try {
     await dbDelete(detailId);
     houses = houses.filter(x=>x.id!==detailId);
     compareSet.delete(detailId); detailId = null;
-    closeDrawer(); renderAll(); toast("已删除");
+    closeDrawer(); renderAll(); toast(mediaCleaned ? "已删除" : "已删除（部分媒体文件未能清理）");
   } catch(err){ toast("删除失败：" + err.message); }
 });
 
@@ -1048,6 +1086,7 @@ function rerenderDrawer(h){
   syncDrawerActions(h);
   const info2 = $("#drawer-scroll .detail-info");
   if (info2) info2.scrollTop = st;
+  hydrateMedia($("#drawer-scroll"));
 }
 let listingCtx = null;
 function lfNum(id, label, val, ph){
@@ -1194,6 +1233,8 @@ $("#btn-listing-save").addEventListener("click", async () => {
 async function deleteListing(houseId, listingId){
   const h = byId(houseId); if (!h) return;
   if (!confirm("确定删除这套房源？")) return;
+  const delTarget = getListings(h).find(x => String(x.id) === String(listingId));
+  await removeMediaFiles(getMedia(delTarget).map(m => m.path));
   const oldList = getListings(h);
   h.listings = oldList.filter(x => String(x.id) !== String(listingId));
   try {
@@ -1270,9 +1311,11 @@ function openListingDetail(houseId, listingId){
   r += kv("来源", LISTING_SOURCE[l.source] || "");
   r += kv("备注", l.note);
   sec("其他", r);
+  body += mediaSectionHTML(l, "l");
   $("#ldetail-body").innerHTML = body;
   const urlBtn = $("#ldetail-url");
   if (l.url) { urlBtn.href = l.url; urlBtn.classList.remove("hidden"); } else { urlBtn.removeAttribute("href"); urlBtn.classList.add("hidden"); }
+  hydrateMedia($("#ldetail-body"));
   $("#ldetail-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 }
@@ -1317,6 +1360,232 @@ $("#drawer-scroll").addEventListener("click", e => {
     return;
   }
 });
+
+/* ==================== 实拍媒体（图片 / 视频 · Supabase Storage） ==================== */
+const MEDIA_BUCKET = "media";
+const MEDIA_MAX_VIDEO = 50 * 1024 * 1024;
+const signedUrlCache = new Map();
+let mediaCtx = null;
+let lightboxCtx = null;
+
+function getMedia(owner){ return owner && Array.isArray(owner.media) ? owner.media : []; }
+function allMediaBytes(){
+  let total = 0;
+  const add = m => { const n = Number(m && m.size); if (isFinite(n) && n > 0) total += n; };
+  for (const h of houses) { getMedia(h).forEach(add); for (const l of getListings(h)) getMedia(l).forEach(add); }
+  return total;
+}
+function mediaUsageText(){
+  const mb = allMediaBytes() / 1048576;
+  return "全库媒体约 " + (mb >= 100 ? Math.round(mb) : Math.round(mb * 10) / 10) + " MB / 1GB";
+}
+function mediaSectionHTML(owner, scope){
+  const list = getMedia(owner);
+  const thumbs = list.map(m => {
+    const badge = m.kind === "video" ? '<span class="play-badge">▶</span>' : "";
+    const inner = m.kind === "video" ? '<video preload="metadata" muted playsinline></video>' : '<img alt="" loading="lazy">';
+    return `<div class="mthumb" data-mthumb data-mid="${esc(m.id)}" data-mpath="${esc(m.path)}" title="${esc(m.name || "")}">${inner}${badge}</div>`;
+  }).join("");
+  return `<section class="dsec msec">
+    <div class="msec-head"><h4>实拍</h4><span class="musage">${esc(mediaUsageText())}</span><button type="button" class="btn small primary" data-mupload="${scope}">＋ 上传照片/视频</button></div>
+    ${list.length ? `<div class="mgrid">${thumbs}</div>` : `<div class="mempty">暂无照片/视频</div>`}
+  </section>`;
+}
+async function signedUrls(paths){
+  const now = Date.now();
+  const out = new Map();
+  const need = [];
+  for (const p of paths) {
+    const c = signedUrlCache.get(p);
+    if (c && c.exp > now + 60000) out.set(p, c.url); else need.push(p);
+  }
+  if (need.length && sb) {
+    try {
+      const { data, error } = await sb.storage.from(MEDIA_BUCKET).createSignedUrls(need, 3600);
+      if (!error && Array.isArray(data)) for (const d of data) {
+        const u = d && (d.signedUrl || d.signedURL);
+        if (d && d.path && u) { signedUrlCache.set(d.path, { url: u, exp: now + 3600 * 1000 }); out.set(d.path, u); }
+      }
+    } catch (e) { /* 签名失败时缩略图留空占位 */ }
+  }
+  return out;
+}
+async function hydrateMedia(root){
+  if (!root) return;
+  const els = [...root.querySelectorAll("[data-mthumb]")];
+  if (!els.length) return;
+  const urls = await signedUrls(els.map(el => el.dataset.mpath));
+  for (const el of els) {
+    const u = urls.get(el.dataset.mpath);
+    if (!u) continue;
+    const img = el.querySelector("img"); if (img && !img.src) img.src = u;
+    const vid = el.querySelector("video"); if (vid && !vid.src) vid.src = u;
+  }
+}
+function mediaExtOf(file){
+  const n = String(file.name || "");
+  const dot = n.lastIndexOf(".");
+  if (dot > 0 && dot < n.length - 1) { const e = n.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, ""); if (e) return e; }
+  const map = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/heic": "heic", "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm" };
+  return map[file.type] || "";
+}
+async function compressImageFile(file){
+  const orig = () => ({ blob: file, ext: mediaExtOf(file), size: file.size });
+  try {
+    let bmp = null;
+    if (window.createImageBitmap) { try { bmp = await createImageBitmap(file); } catch (e) { bmp = null; } }
+    if (!bmp) {
+      bmp = await new Promise((res, rej) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => res(img);
+        img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode failed")); };
+        img.src = url;
+      });
+    }
+    const w = bmp.width, hgt = bmp.height;
+    if (!w || !hgt) { if (bmp.close) bmp.close(); return orig(); }
+    const scale = Math.min(1, 1920 / Math.max(w, hgt));
+    const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(hgt * scale));
+    const cv = document.createElement("canvas");
+    cv.width = cw; cv.height = ch;
+    cv.getContext("2d").drawImage(bmp, 0, 0, cw, ch);
+    if (bmp.close) bmp.close();
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.82));
+    if (!blob) return orig();
+    return { blob, ext: "jpg", size: blob.size };
+  } catch (e) { return orig(); }
+}
+function isBucketMissingErr(err){
+  const msg = String((err && err.message) || err || "");
+  return /bucket/i.test(msg) && /not\s*found/i.test(msg);
+}
+async function uploadOneMedia(h, l, file){
+  const type = file.type || "";
+  const isVideo = type.startsWith("video/");
+  const isImage = type.startsWith("image/");
+  if (!isVideo && !isImage) { toast("「" + (file.name || "文件") + "」不是图片或视频，已跳过"); return null; }
+  if (isVideo && file.size > MEDIA_MAX_VIDEO) { toast("视频「" + (file.name || "") + "」超过 50MB，已跳过"); return null; }
+  let blob = file, ext = mediaExtOf(file), size = file.size;
+  if (isImage) { const c = await compressImageFile(file); blob = c.blob; ext = c.ext; size = c.size; }
+  if (!ext) ext = isVideo ? "mp4" : "jpg";
+  const mid = "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const path = l ? `c${h.id}/l${l.id}/${mid}.${ext}` : `c${h.id}/${mid}.${ext}`;
+  const { error } = await sb.storage.from(MEDIA_BUCKET).upload(path, blob, { upsert: false, contentType: blob.type || type || undefined });
+  if (error) throw error;
+  return { id: mid, path, kind: isVideo ? "video" : "image", name: file.name || "", size, createdAt: new Date().toISOString() };
+}
+function resolveMediaCtx(ctx){
+  const h = ctx ? byId(ctx.houseId) : null;
+  if (!h) return { h: null, l: null, owner: null };
+  if (ctx.listingId) { const l = getListings(h).find(x => String(x.id) === String(ctx.listingId)) || null; return { h, l, owner: l }; }
+  return { h, l: null, owner: h };
+}
+function refreshMediaViews(ctx, h){
+  rerenderDrawer(h);
+  if (ctx && ctx.listingId) openListingDetail(ctx.houseId, ctx.listingId);
+}
+function startMediaUpload(ctx){
+  mediaCtx = ctx;
+  const inp = $("#media-file");
+  inp.value = "";
+  inp.click();
+}
+$("#media-file").addEventListener("change", async e => {
+  const files = [...(e.target.files || [])];
+  const ctx = mediaCtx; mediaCtx = null; e.target.value = "";
+  if (!ctx || !files.length) return;
+  const { h, l, owner } = resolveMediaCtx(ctx);
+  if (!h || !owner) return;
+  const btns = [...document.querySelectorAll(ctx.listingId ? '#ldetail-body [data-mupload]' : '#drawer-scroll [data-mupload="c"]')];
+  btns.forEach(b => { b.disabled = true; });
+  const oldMedia = getMedia(owner).slice();
+  const added = [];
+  let bucketMissing = false;
+  for (let i = 0; i < files.length; i++) {
+    btns.forEach(b => { b.textContent = `上传中 ${i + 1}/${files.length}…`; });
+    try {
+      const item = await uploadOneMedia(h, l, files[i]);
+      if (item) added.push(item);
+    } catch (err) {
+      if (isBucketMissingErr(err)) { bucketMissing = true; break; }
+      toast("「" + (files[i].name || "文件") + "」上传失败：" + err.message);
+    }
+  }
+  if (bucketMissing) toast("媒体存储还没初始化，请先在 Supabase 运行 storage.sql");
+  if (added.length) {
+    owner.media = [...oldMedia, ...added];
+    try { await dbUpdate(h); toast(`已上传 ${added.length} 个文件`); }
+    catch (err) { owner.media = oldMedia; toast("保存失败：" + err.message); }
+  }
+  refreshMediaViews(ctx, h);
+});
+async function openLightbox(ctx, mediaId){
+  const { owner } = resolveMediaCtx(ctx);
+  if (!owner) return;
+  const m = getMedia(owner).find(x => String(x.id) === String(mediaId));
+  if (!m) return;
+  lightboxCtx = { houseId: ctx.houseId, listingId: ctx.listingId || null, mediaId: m.id };
+  const urls = await signedUrls([m.path]);
+  const u = urls.get(m.path);
+  $("#lb-stage").innerHTML = u
+    ? (m.kind === "video" ? `<video src="${esc(u)}" controls autoplay playsinline></video>` : `<img src="${esc(u)}" alt="">`)
+    : `<div class="lb-miss">文件加载失败，请稍后重试</div>`;
+  $("#lb-name").textContent = m.name || "";
+  $("#media-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
+function closeLightbox(){
+  const w = $("#media-wrap"); if (!w) return;
+  w.classList.add("hidden");
+  const st = $("#lb-stage"); if (st) st.innerHTML = "";
+  lightboxCtx = null;
+  if (!$("#drawer").classList.contains("open") && $("#edit-wrap").classList.contains("hidden") && $("#cmp-wrap").classList.contains("hidden") && $("#listing-wrap").classList.contains("hidden") && $("#ldetail-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+async function deleteMediaItem(ctx, mediaId){
+  const { h, owner } = resolveMediaCtx(ctx);
+  if (!h || !owner) return;
+  const m = getMedia(owner).find(x => String(x.id) === String(mediaId));
+  if (!m) return;
+  if (!confirm(m.kind === "video" ? "确定删除这段视频？" : "确定删除这张照片？")) return;
+  const { error } = await sb.storage.from(MEDIA_BUCKET).remove([m.path]);
+  if (error) { toast("删除失败：" + error.message); return; }
+  signedUrlCache.delete(m.path);
+  const old = getMedia(owner).slice();
+  owner.media = old.filter(x => String(x.id) !== String(mediaId));
+  try { await dbUpdate(h); }
+  catch (err) { owner.media = old; toast("保存失败：" + err.message); return; }
+  closeLightbox();
+  refreshMediaViews(ctx, h);
+  toast("已删除");
+}
+async function removeMediaFiles(paths){
+  const list = (paths || []).filter(Boolean);
+  if (!list.length) return true;
+  list.forEach(p => signedUrlCache.delete(p));
+  if (!sb) return false;
+  try {
+    const { error } = await sb.storage.from(MEDIA_BUCKET).remove(list);
+    return !error;
+  } catch (e) { return false; }
+}
+$("#drawer-scroll").addEventListener("click", e => {
+  const up = e.target.closest('[data-mupload="c"]');
+  if (up) { if (detailId) startMediaUpload({ houseId: detailId, listingId: null }); return; }
+  const th = e.target.closest("[data-mthumb]");
+  if (th && detailId) openLightbox({ houseId: detailId, listingId: null }, th.dataset.mid);
+});
+$("#ldetail-body").addEventListener("click", e => {
+  const up = e.target.closest('[data-mupload="l"]');
+  if (up) { if (ldetailCtx) startMediaUpload({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }); return; }
+  const th = e.target.closest("[data-mthumb]");
+  if (th && ldetailCtx) openLightbox({ houseId: ldetailCtx.houseId, listingId: ldetailCtx.listingId }, th.dataset.mid);
+});
+document.querySelectorAll("[data-close-media]").forEach(el => el.addEventListener("click", closeLightbox));
+$("#lb-del").addEventListener("click", () => { if (lightboxCtx) deleteMediaItem(lightboxCtx, lightboxCtx.mediaId); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && lightboxCtx) { e.stopPropagation(); closeLightbox(); }
+}, true);
 
 /* ==================== 对比 ==================== */
 const CMP_FIELDS = [
