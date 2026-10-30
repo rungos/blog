@@ -188,9 +188,15 @@
   .kv .k{width:110px; flex:none; color:var(--muted); font-size:13px}
   .kv .v{flex:1; white-space:pre-wrap; word-break:break-word; color:var(--text); font-variant-numeric:tabular-nums}
   .kv .v a{color:var(--ink); text-decoration:underline}
-  .amen{padding:4px 0; font-size:14px; color:var(--text)}
-  .amen .d{color:var(--muted); font-size:13px}
-  .amen:last-child{border-bottom:1px solid var(--line); padding-bottom:10px}
+  .amen-cat{padding:10px 0; border-bottom:1px solid var(--line)}
+  .amen-cat-h{display:flex; align-items:baseline; gap:8px; margin:0 0 6px}
+  .amen-cat-t{font-size:13.5px; font-weight:600; color:var(--text)}
+  .amen-cat-n{font-size:12px; color:var(--muted)}
+  .amen-row{display:flex; align-items:baseline; gap:12px; padding:3px 0; font-size:14px; line-height:1.55}
+  .amen-name{flex:1; min-width:0; word-break:break-word; color:var(--text)}
+  .amen-note{color:var(--muted); font-size:12.5px}
+  .amen-d{flex:none; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums}
+  .amen-more{display:inline-block; margin-top:7px; padding:0; background:none; border:none; font-size:13px; color:var(--ink); cursor:pointer}
   .notes-txt{white-space:pre-wrap; word-break:break-word; font-size:14px; color:var(--text); padding-bottom:10px; border-bottom:1px solid var(--line)}
   .lsec-body{border-bottom:1px solid var(--line)}
   .msec .mgrid,.msec .mempty{padding-bottom:12px; border-bottom:1px solid var(--line)}
@@ -972,11 +978,40 @@ function kv(k, v, linkifyIt){
   if (!kvHas(v)) return "";
   return `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${linkifyIt ? linkify(v) : esc(v)}</div></div>`;
 }
-function amenBlock(title, arr){
-  if (!arr || !arr.length) return "";
-  const rows = arr.filter(a => a && (kvHas(a.name) || isSet(a.distanceKm) || kvHas(a.note))).map(a => `<div class="amen">${esc(a.name||"")} <span class="d">${isSet(a.distanceKm)?a.distanceKm+" km":""}${a.note?" · "+esc(a.note):""}</span></div>`).join("");
-  if (!rows) return "";
-  return `<section class="dsec"><h4>${esc(title)}</h4>${rows}</section>`;
+/* 周边配套：细分类逐块展示（地铁/幼儿园/小学/中学/大学/医院/商场/超市/菜市场/公园），
+   旧 schools 合集仅在细分类学校全空时以「学校」块兜底；每块按距离升序、默认 3 项、超出可展开 */
+const AMEN_CATS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["markets","菜市场"],["parks","公园"]];
+const AMEN_SCHOOL_KEYS = ["kindergartens","primarySchools","middleSchools","universities"];
+let amenOpenCats = new Set();
+function amenDist(d){
+  if (!isSet(d)) return "";
+  const km = Number(d);
+  if (!isFinite(km)) return "";
+  return km < 1 ? Math.round(km * 1000) + "米" : (Math.round(km * 10) / 10) + " km";
+}
+function amenItems(arr){
+  return (arr || []).filter(a => a && (kvHas(a.name) || isSet(a.distanceKm) || kvHas(a.note)))
+    .map((a, i) => [a, i])
+    .sort((x, y) => {
+      const da = isSet(x[0].distanceKm) && isFinite(Number(x[0].distanceKm)) ? Number(x[0].distanceKm) : Infinity;
+      const db = isSet(y[0].distanceKm) && isFinite(Number(y[0].distanceKm)) ? Number(y[0].distanceKm) : Infinity;
+      return da !== db ? da - db : x[1] - y[1];
+    }).map(p => p[0]);
+}
+function amenCatBlock(key, title, arr){
+  const items = amenItems(arr);
+  if (!items.length) return "";
+  const open = amenOpenCats.has(key);
+  const rows = (open ? items : items.slice(0, 3)).map(a =>
+    `<div class="amen-row"><span class="amen-name">${esc(a.name || "")}${kvHas(a.note) ? ` <span class="amen-note">${esc(a.note)}</span>` : ""}</span><span class="amen-d">${esc(amenDist(a.distanceKm))}</span></div>`).join("");
+  const more = items.length > 3 ? `<button type="button" class="amen-more" data-amen-toggle="${key}">${open ? "收起 ▴" : `展开全部 ${items.length} 处 ▾`}</button>` : "";
+  return `<div class="amen-cat"><div class="amen-cat-h"><span class="amen-cat-t">${esc(title)}</span><span class="amen-cat-n">${items.length} 处</span></div>${rows}${more}</div>`;
+}
+function amenAreaHTML(h){
+  let blocks = "";
+  for (const [key, title] of AMEN_CATS) blocks += amenCatBlock(key, title, h[key]);
+  if (!AMEN_SCHOOL_KEYS.some(k => amenItems(h[k]).length)) blocks += amenCatBlock("schools", "学校", h.schools);
+  return blocks ? `<section class="dsec amen-area"><h4>周边配套</h4>${blocks}</section>` : "";
 }
 function commuteLine(label, km, min){
   if (!isSet(km) && !isSet(min)) return "";
@@ -1051,11 +1086,7 @@ function detailHTML(h){
     s += kv("高铁全程→通勤B", leg(h.hsrToBMinutes));
     if (s) html += `<section class="dsec"><h4>天津 · 高铁+地铁通勤</h4>${s}</section>`;
   }
-  html += amenBlock("医院", h.hospitals);
-  html += amenBlock("学校", h.schools);
-  html += amenBlock("菜市场", h.markets);
-  html += amenBlock("商场", h.malls);
-  html += amenBlock("公园", h.parks);
+  html += amenAreaHTML(h);
   if (isSet(h.otherAmenities)) html += `<section class="dsec"><h4>其他配套</h4>${kv("说明", h.otherAmenities)}</section>`;
   s = "";
   s += kv("门禁", triStr(h.hasAccessControl));
@@ -1084,6 +1115,7 @@ function openDetail(id){
   const h = byId(id); if (!h) return;
   detailId = id;
   listingsOpen = false;
+  amenOpenCats = new Set();
   $("#drawer-scroll").innerHTML = detailHTML(h);
   syncDrawerActions(h);
   $("#drawer-scrim").classList.add("show");
@@ -1526,6 +1558,14 @@ $("#ldetail-del").addEventListener("click", async () => {
   if (!h || !getListings(h).some(x => String(x.id) === String(ctx.listingId))) closeListingDetail();
 });
 $("#drawer-scroll").addEventListener("click", e => {
+  const at = e.target.closest("[data-amen-toggle]");
+  if (at) {
+    const key = at.dataset.amenToggle;
+    if (amenOpenCats.has(key)) amenOpenCats.delete(key); else amenOpenCats.add(key);
+    const h = byId(detailId);
+    if (h) rerenderDrawer(h);
+    return;
+  }
   if (e.target.closest("[data-ladd]")) { if (detailId) openListingForm(detailId, null); return; }
   const ed = e.target.closest("[data-ledit]");
   if (ed) { openListingForm(detailId, ed.dataset.ledit); return; }
@@ -2033,7 +2073,7 @@ const FORM_SECTIONS = [
     ["hasGarbageStation","附近垃圾站","tri"], ["nearElevated","附近高架","tri"], ["noiseLevel","噪音","text"]
   ]]
 ];
-const AMEN_FIELDS = [["hospitals","医院"],["schools","学校"],["markets","菜市场"],["malls","商场"],["parks","公园"]];
+const AMEN_FIELDS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["schools","学校（旧）"],["markets","菜市场（旧）"]];
 
 function triSel(val){ return (val===1||val===true) ? "1" : ((val===0||val===false) ? "0" : ""); }
 function fieldInput(key, label, type, val, ph, hint){
@@ -2072,7 +2112,7 @@ function amenRow(a){
 }
 function openEdit(id){
   editingId = id;
-  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, hospitals:[], schools:[], markets:[], malls:[], parks:[] };
+  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], schools:[], markets:[], malls:[], supermarkets:[], parks:[] };
   if (!h) return;
   $("#edit-title").textContent = id ? "编辑 · " + (h.community||"") : "新增一套";
   let html = "";
