@@ -408,10 +408,10 @@
   /* ---------- responsive ---------- */
   @media (max-width:767px){
     .tb-inner{flex-wrap:wrap; padding:10px 14px; gap:10px 12px}
-    .brand{font-size:17px}
-    .search-box{order:3; flex-basis:100%; max-width:none; margin:0}
+    .brand{font-size:17px; order:1}
+    .search-box{order:2; flex-basis:100%; max-width:none; margin:0}
     .search-box input{height:44px}
-    .tb-actions{margin-left:auto; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+    .tb-actions{order:3; flex-basis:100%; margin-left:0; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
     .tb-actions::-webkit-scrollbar{display:none}
     .tb-actions .btn{padding:8px 13px; font-size:13px; flex:none}
     .tb-actions .avatar-btn{flex:none}
@@ -1082,11 +1082,15 @@ $("#mobile-chips").addEventListener("click", e => {
 });
 
 /* ==================== 统计 ==================== */
+function lfavStats(){
+  const rows = favListingRows();
+  const total = houses.reduce((a, h) => a + getListings(h).filter(l => l.isFavorite).length, 0);
+  return { n: rows.length, comms: new Set(rows.map(r => r.h.id)).size, total };
+}
 function renderStats(){
   if (viewMode === "lfav") {
-    let n = 0; const comms = new Set();
-    for (const h of houses) for (const l of getListings(h)) if (l.isFavorite) { n++; comms.add(h.id); }
-    $("#subline").textContent = `共 ${n} 套关注房源 · 来自 ${comms.size} 个小区`;
+    const st = lfavStats();
+    $("#subline").textContent = `共 ${st.n} 套关注房源 · 来自 ${st.comms} 个小区`;
     return;
   }
   const total = houses.length;
@@ -1174,7 +1178,7 @@ function favListingRows(){
       rows.push({ h, l });
     }
   }
-  let rowsF = rows;
+  let rowsF = rows.slice();
   const dropSel = $("#f-drop") ? $("#f-drop").value : "";
   const maxP = $("#f-maxprice") ? $("#f-maxprice").value : "";
   const maxC = $("#f-maxcommute") ? $("#f-maxcommute").value : "";
@@ -1207,9 +1211,9 @@ function favCardHTML(h, l, showOwner){
 function renderFavListings(main){
   const rows = favListingRows();
   if (!rows.length) {
-    const anyFav = houses.some(h => getListings(h).some(l => l.isFavorite));
-    main.innerHTML = anyFav
-      ? `<div class="empty"><span class="big">★</span>没有符合条件的关注房源</div>`
+    const total = houses.reduce((a, h) => a + getListings(h).filter(l => l.isFavorite).length, 0);
+    main.innerHTML = total
+      ? `<div class="empty"><span class="big">★</span>当前筛选下没有符合条件的关注房源（全部共 ${total} 套），点顶栏「清除全部」看看全部</div>`
       : `<div class="empty"><span class="big">★</span>还没有关注的房源，在房源编辑里勾选「关注房源」即可</div>`;
     return;
   }
