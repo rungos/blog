@@ -164,6 +164,17 @@
   .mstats{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px}
   .mstat{background:var(--soft); border-radius:14px; padding:10px 16px; font-size:13px; color:var(--muted)}
   .mstat b{display:block; font-size:19px; color:var(--ink)}
+  .avatar-btn{overflow:hidden}
+  .avatar-btn img{width:100%; height:100%; border-radius:50%; object-fit:cover}
+  .pf-sec{margin-bottom:22px}
+  .pf-sec h4{margin:0 0 12px; font-size:14px}
+  .pf-avatar-row{display:flex; align-items:center; gap:16px}
+  .pf-avatar-img{width:96px; height:96px; border-radius:50%; object-fit:cover; background:#eee; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:700; color:#fff; background:#111}
+  .pf-avatar-img img{width:100%; height:100%; border-radius:50%; object-fit:cover}
+  .pf-field{margin-bottom:12px}
+  .pf-field label{font-size:13px; color:var(--muted); display:block}
+  .pf-field label input{margin-top:5px; color:var(--ink)}
+  .pf-field .ro{font-size:14.5px; color:var(--ink); margin-top:5px}
   #qiju-map{height:calc(100dvh - 250px); min-height:430px; border-radius:18px; z-index:0; background:var(--soft)}
   .map-note{font-size:13px; color:var(--muted); margin:0 2px 10px}
   .map-pop b{font-size:14px}
@@ -469,9 +480,10 @@
         <button class="btn" id="btn-export">导出</button>
         <button class="btn" id="btn-calc">测算</button>
         <button class="btn" id="btn-req">购房需求</button>
+        <button class="btn" id="btn-adv">高级筛选</button>
         <button class="btn" id="btn-undo-import" style="display:none">撤销导入</button>
         <button class="btn primary" id="btn-add-top">+ 新增</button>
-        <button class="avatar-btn" id="btn-logout" title="退出"><span id="user-avatar">·</span></button>
+        <button class="avatar-btn" id="btn-profile" title="个人信息"><span id="user-avatar">·</span></button>
       </div>
     </div>
     <div class="tb-filters">
@@ -625,7 +637,7 @@
       <div class="calc-grid">
         <label>总价（万元）<input type="number" id="c-total" min="0" placeholder="如 300"></label>
         <label>首付成数<select id="c-down"><option value="0.2">2 成</option><option value="0.25">2.5 成</option><option value="0.3" selected>3 成</option><option value="0.35">3.5 成</option><option value="0.4">4 成</option><option value="0.5">5 成</option><option value="custom">自定义金额</option></select></label>
-        <label>首付金额（万元，没有固定成数时填这个）<input type="number" id="c-down-amt" min="0" placeholder="如 90"></label>
+        <label>首付金额（万元）<input type="number" id="c-down-amt" min="0" placeholder="如 90"></label>
         <label>贷款年限<select id="c-years"><option value="30" selected>30 年</option><option value="25">25 年</option><option value="20">20 年</option><option value="15">15 年</option><option value="10">10 年</option></select></label>
         <label>公积金贷款（万元，0=纯商贷）<input type="number" id="c-fund" min="0" value="0"></label>
         <label>商贷年利率 %<input type="number" id="c-rate-biz" step="0.01" value="3.5"></label>
@@ -634,6 +646,92 @@
       <div class="calc-out" id="c-out">填入总价后自动计算（等额本息）。利率是示例值，按银行实际改。</div>
     </div>
     <div class="modal-foot"><button class="btn" data-close-calc>关闭</button></div>
+  </div>
+</div>
+
+<!-- ================= 高级筛选弹窗 ================= -->
+<div class="modal-wrap hidden" id="adv-wrap">
+  <div class="modal-scrim" data-close-adv></div>
+  <div class="modal" style="width:620px">
+    <div class="modal-head"><h2>高级筛选</h2><button class="modal-close" data-close-adv>✕</button></div>
+    <div class="modal-body" id="adv-body">
+      <div class="req-sec"><h4>1 · 价格</h4>
+        <div class="req-grid">
+          <label>单价下限（元/㎡）<input type="number" id="a-unit-min" min="0"></label>
+          <label>单价上限（元/㎡）<input type="number" id="a-unit-max" min="0"></label>
+          <label>总价下限（万元）<input type="number" id="a-total-min" min="0"></label>
+          <label>总价上限（万元）<input type="number" id="a-total-max" min="0"></label>
+        </div>
+        <div class="req-checks" style="margin-top:12px"><label><input type="checkbox" id="a-drop">降过价的</label></div>
+        <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">租金、租售比台账里没有，筛不了；最近成交价目前只是文字记录，也没法按数字筛。</p>
+      </div>
+      <div class="req-sec"><h4>2 · 房子本身</h4>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">户型</div><div class="req-checks" id="a-rooms">
+          <label><input type="checkbox" value="1">1室</label><label><input type="checkbox" value="2">2室</label><label><input type="checkbox" value="3">3室</label><label><input type="checkbox" value="4">4室+</label>
+        </div>
+        <div class="req-grid" style="margin-top:12px">
+          <label>面积下限（㎡）<input type="number" id="a-area-min" min="0"></label>
+          <label>面积上限（㎡）<input type="number" id="a-area-max" min="0"></label>
+        </div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">楼层</div><div class="req-checks" id="a-floor">
+          <label><input type="checkbox" value="低楼层">低楼层</label><label><input type="checkbox" value="中楼层">中楼层</label><label><input type="checkbox" value="高楼层">高楼层</label><label><input type="checkbox" value="顶层">顶层</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">朝向（含即算）</div><div class="req-checks" id="a-orient">
+          <label><input type="checkbox" value="南">南</label><label><input type="checkbox" value="北">北</label><label><input type="checkbox" value="东">东</label><label><input type="checkbox" value="西">西</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">装修</div><div class="req-checks" id="a-deco">
+          <label><input type="checkbox" value="精装">精装</label><label><input type="checkbox" value="简装">简装</label><label><input type="checkbox" value="毛坯">毛坯</label><label><input type="checkbox" value="其他">其他</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">房龄 / 产权 / 其他</div><div class="req-checks" id="a-ageown">
+          <label><input type="checkbox" value="age:满五年">满五年</label><label><input type="checkbox" value="age:满两年">满两年</label><label><input type="checkbox" value="own:商品房">商品房</label><label><input type="checkbox" value="own:已购公房">已购公房</label><label><input type="checkbox" value="elevator">有电梯</label><label><input type="checkbox" value="nomort">只要无抵押</label>
+        </div></div>
+      </div>
+      <div class="req-sec"><h4>3 · 通勤（分钟上限，缺数据的会被排除）</h4>
+        <div class="req-grid">
+          <label>驾车到你公司<input type="number" id="a-drive-a" min="0"></label>
+          <label>驾车到对象公司<input type="number" id="a-drive-b" min="0"></label>
+          <label>电车到你公司<input type="number" id="a-ebike-a" min="0"></label>
+          <label>电车到对象公司<input type="number" id="a-ebike-b" min="0"></label>
+          <label>公交到你公司<input type="number" id="a-transit-a" min="0"></label>
+          <label>公交到对象公司<input type="number" id="a-transit-b" min="0"></label>
+          <label>高铁站名含<input type="text" id="a-hsr-station" placeholder="如 天津站"></label>
+          <label>到高铁站（分钟）<input type="number" id="a-hsr-to-station" min="0"></label>
+          <label>高铁到北京南（分钟）<input type="number" id="a-hsr-ride" min="0"></label>
+        </div>
+        <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">平时和早高峰是两套开车数据，导入包会覆盖，筛的时候以当前库里的数据为准。</p>
+      </div>
+      <div class="req-sec"><h4>4 · 周边配套（距离上限，公里）</h4>
+        <div class="req-grid">
+          <label>地铁<input type="number" id="a-subway-max" min="0" step="0.1"></label>
+          <label>医院<input type="number" id="a-hosp-max" min="0" step="0.1"></label>
+          <label>公园<input type="number" id="a-park-max" min="0" step="0.1"></label>
+          <label>商场<input type="number" id="a-mall-max" min="0" step="0.1"></label>
+          <label>超市<input type="number" id="a-super-max" min="0" step="0.1"></label>
+          <label>菜市场<input type="number" id="a-market-max" min="0" step="0.1"></label>
+        </div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">学校（有即算）</div><div class="req-checks" id="a-schools">
+          <label><input type="checkbox" value="kindergartens">幼儿园</label><label><input type="checkbox" value="primarySchools">小学</label><label><input type="checkbox" value="middleSchools">中学</label><label><input type="checkbox" value="universities">大学</label>
+        </div></div>
+      </div>
+      <div class="req-sec"><h4>5 · 状态和主观</h4>
+        <div class="req-grid">
+          <label>状态<select id="a-status"><option value="">全部</option><option value="viewed">已看</option><option value="planned">待看</option></select></label>
+          <label>评分下限（1-5）<input type="number" id="a-rating-min" min="1" max="5"></label>
+          <label>看房日期起<input type="date" id="a-view-from"></label>
+          <label>看房日期止<input type="date" id="a-view-to"></label>
+        </div>
+        <div class="req-checks" style="margin-top:12px" id="a-flags">
+          <label><input type="checkbox" value="favComm">关注小区</label><label><input type="checkbox" value="favList">有关注房源</label><label><input type="checkbox" value="me">我看中</label><label><input type="checkbox" value="partner">对象看中</label><label><input type="checkbox" value="diff">分歧：我看中、对象没看中</label>
+        </div>
+      </div>
+      <div class="req-sec"><h4>6 · 数据完整度（反向查）</h4>
+        <div class="req-checks" id="a-miss">
+          <label><input type="checkbox" value="basic">缺基本信息</label><label><input type="checkbox" value="commute">缺通勤</label><label><input type="checkbox" value="amen">缺配套</label><label><input type="checkbox" value="listing">缺房源</label><label><input type="checkbox" value="detail">缺房源详情</label>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--muted)">房源级条件（户型、面积、楼层、电梯、朝向、装修、房龄、产权、抵押、价格、降价）按“同一套房源同时满足”算：一个小区只要有一套全满足就入选，不会把不同套的条件拼起来。</p>
+    </div>
+    <div class="modal-foot"><span id="adv-count" style="font-size:13.5px;color:var(--muted);margin-right:auto"></span><button class="btn" id="btn-adv-clear">清空</button><button class="btn" data-close-adv>取消</button><button class="btn primary" id="btn-adv-apply">应用筛选</button></div>
   </div>
 </div>
 
@@ -843,8 +941,9 @@ function enterApp(){
   $("#view-app").classList.remove("hidden");
   if (userEmail) {
     $("#user-avatar").textContent = userEmail.trim().charAt(0).toUpperCase() || "·";
-    $("#btn-logout").title = userEmail + " · 点击退出";
+    $("#btn-profile").title = userEmail + " · 个人信息";
   }
+  refreshTopbarAvatar();
   loadHouses();
 }
 $("#login-form").addEventListener("submit", async (e) => {
@@ -861,7 +960,7 @@ $("#login-form").addEventListener("submit", async (e) => {
   enterApp();
 });
 async function doLogout(){ if (sb) await sb.auth.signOut(); houses = []; showLogin(); }
-$("#btn-logout").addEventListener("click", doLogout);
+$("#btn-profile").addEventListener("click", () => setTab("profile"));
 
 /* ==================== 数据层（CRUD 按 app_id 匹配） ==================== */
 async function loadHouses(){
@@ -924,18 +1023,20 @@ function clearFilters(){
   $("#f-district").value = ""; buildSectorOptions();
   $("#f-sector").value = "";
   $("#f-sort").value = "default"; $("#search").value = "";
+  adv = {}; resetAdvForm();
   renderList();
 }
 function renderFilterSummary(){
   const f = activeFilters();
   const box = $("#filter-summary");
-  if (!f.any) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  if (!f.any && !advAny()) { box.classList.add("hidden"); box.innerHTML = ""; return; }
   const parts = [];
   if (f.city) parts.push(f.city);
   if (f.district) parts.push(f.district);
   if (f.sector) parts.push(f.sector);
   if (f.q) parts.push("搜索「" + f.q + "」");
   if (f.sort !== "default") parts.push("已排序");
+  if (advAny()) parts.push("高级筛选");
   box.innerHTML = `<span>当前筛选</span>` + parts.map(p => `<span class="chip-x">${esc(p)}</span>`).join("") + `<button id="fs-clear">清除全部</button>`;
   box.classList.remove("hidden");
   $("#fs-clear").addEventListener("click", clearFilters);
@@ -943,7 +1044,7 @@ function renderFilterSummary(){
 
 
 /* ==================== 页签 ==================== */
-const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源", map: "地图视图", match: "匹配结果" };
+const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源", map: "地图视图", match: "匹配结果", profile: "个人信息" };
 function setTab(tab){
   if (tab === "lfav") {
     viewMode = (viewMode === "lfav") ? "houses" : "lfav";
@@ -951,6 +1052,8 @@ function setTab(tab){
     viewMode = (viewMode === "map") ? "houses" : "map";
   } else if (tab === "match") {
     viewMode = (viewMode === "match") ? "houses" : "match";
+  } else if (tab === "profile") {
+    viewMode = (viewMode === "profile") ? "houses" : "profile";
   } else {
     viewMode = "houses";
     curTab = tab;
@@ -965,7 +1068,7 @@ function setTab(tab){
     const t = b.dataset.tab;
     b.classList.toggle("active", t === "lfav" ? viewMode === "lfav" : (t === "map" ? viewMode === "map" : (t === "match" ? viewMode === "match" : (viewMode === "houses" && t === curTab))));
   });
-  $("#page-title").textContent = viewMode === "lfav" ? TAB_TITLES.lfav : (viewMode === "map" ? TAB_TITLES.map : (viewMode === "match" ? TAB_TITLES.match : (TAB_TITLES[curTab] || "全部房源")));
+  $("#page-title").textContent = viewMode === "lfav" ? TAB_TITLES.lfav : (viewMode === "map" ? TAB_TITLES.map : (viewMode === "match" ? TAB_TITLES.match : (viewMode === "profile" ? TAB_TITLES.profile : (TAB_TITLES[curTab] || "全部房源"))));
   renderStats();
   renderList();
 }
@@ -999,6 +1102,7 @@ function filteredHouses(){
   if (f.district) list = list.filter(h=>h.district===f.district);
   if (f.sector) list = list.filter(h=>h.sector===f.sector);
   if (f.q) list = list.filter(h => (h.community||"").includes(f.q) || (h.notes||"").includes(f.q) || (h.district||"").includes(f.q) || (h.sector||"").includes(f.q));
+  if (advAny()) list = list.filter(h => advMatch(h));
   return list;
 }
 function cardHTML(h, showLoc, idx){
@@ -1104,6 +1208,7 @@ function renderList(){
   const main = $("#list-main");
   if (viewMode === "lfav") { renderFavListings(main); updateCompareBar(); return; }
   if (viewMode === "match") { renderMatch(main); updateCompareBar(); window.scrollTo(0, 0); return; }
+  if (viewMode === "profile") { renderProfile(main); updateCompareBar(); window.scrollTo(0, 0); return; }
   if (viewMode === "map") {
     const list = filteredHouses();
     const withC = list.filter(h => h.mapCoord);
@@ -2992,6 +3097,276 @@ function fillReqForm(){
 $("#btn-req").addEventListener("click", () => { fillReqForm(); $("#req-wrap").classList.remove("hidden"); document.body.classList.add("locked"); });
 $("#btn-req-save").addEventListener("click", () => { userReq = collectReq(); saveReq(); closeReq(); toast("需求已保存"); if (viewMode !== "match") setTab("match"); else renderList(); });
 $("#btn-req-clear").addEventListener("click", () => { userReq = { wants: {}, blocks: {} }; saveReq(); fillReqForm(); toast("需求已清空"); });
+
+/* ==================== 高级筛选 ==================== */
+let adv = {};
+function advAny(){ return Object.keys(adv).length > 0; }
+function advMatch(h, a){
+  a = a || adv;
+  if (a.status && h.status !== a.status) return false;
+  if (a.favComm && !h.isFavorite) return false;
+  if (a.favList && !getListings(h).some(l => l.isFavorite)) return false;
+  if (a.me && !h.likedByMe) return false;
+  if (a.partner && !h.likedByPartner) return false;
+  if (a.diff && !(h.likedByMe && !h.likedByPartner)) return false;
+  if (a.ratingMin !== undefined && !(h.rating && Number(h.rating) >= a.ratingMin)) return false;
+  if (a.viewFrom && !(h.viewingDate && h.viewingDate >= a.viewFrom)) return false;
+  if (a.viewTo && !(h.viewingDate && h.viewingDate <= a.viewTo)) return false;
+  const cm = (v, cap) => cap === undefined ? true : (isSet(v) && Number(v) <= cap);
+  if (!cm(h.driveAMinutes, a.driveA)) return false;
+  if (!cm(h.driveBMinutes, a.driveB)) return false;
+  if (!cm(h.ebikeAMinutes, a.ebikeA)) return false;
+  if (!cm(h.ebikeBMinutes, a.ebikeB)) return false;
+  if (!cm(h.transitAMinutes, a.transitA)) return false;
+  if (!cm(h.transitBMinutes, a.transitB)) return false;
+  if (a.hsrStation && !(h.hsrStationName || "").includes(a.hsrStation)) return false;
+  if (!cm(h.hsrStationMinutes, a.hsrToStation)) return false;
+  if (!cm(h.hsrRideMinutes, a.hsrRide)) return false;
+  const distOk = (key, cap) => {
+    if (cap === undefined) return true;
+    const d = nearestDist(h, key);
+    return d !== null && d <= cap;
+  };
+  if (!distOk("subway", a.subwayMax)) return false;
+  if (!distOk("hospitals", a.hospMax)) return false;
+  if (!distOk("parks", a.parkMax)) return false;
+  if (!distOk("malls", a.mallMax)) return false;
+  if (!distOk("supermarkets", a.superMax)) return false;
+  if (!distOk("markets", a.marketMax)) return false;
+  if (a.schools) for (const k of a.schools) if (!(Array.isArray(h[k]) && h[k].length)) return false;
+  const miss = completenessOf(h);
+  if (a.missBasic && !miss.includes("基本信息")) return false;
+  if (a.missCommute && !miss.includes("通勤")) return false;
+  if (a.missAmen && !miss.includes("周边配套")) return false;
+  if (a.missListing && !miss.includes("房源")) return false;
+  if (a.missDetail && !miss.includes("房源详情")) return false;
+  const hasListingCond = !!(a.rooms || a.areaMin !== undefined || a.areaMax !== undefined || a.floor || a.elevator || a.orient || a.deco || a.age || a.own || a.nomort || a.drop || a.totalMin !== undefined || a.totalMax !== undefined || a.unitMin !== undefined || a.unitMax !== undefined);
+  const hasNonPriceListingCond = !!(a.rooms || a.areaMin !== undefined || a.areaMax !== undefined || a.floor || a.elevator || a.orient || a.deco || a.age || a.own || a.nomort || a.drop);
+  const L = getListings(h);
+  if (!L.length) {
+    if (hasNonPriceListingCond) return false;
+    if (a.totalMin !== undefined) { const mx = isSet(h.listTotalPriceMax) ? Number(h.listTotalPriceMax) : (isSet(h.listTotalPriceMin) ? Number(h.listTotalPriceMin) : null); if (mx === null || mx < a.totalMin) return false; }
+    if (a.totalMax !== undefined) { const mn = isSet(h.listTotalPriceMin) ? Number(h.listTotalPriceMin) : (isSet(h.listTotalPriceMax) ? Number(h.listTotalPriceMax) : null); if (mn === null || mn > a.totalMax) return false; }
+    if (a.unitMin !== undefined) { const mx = isSet(h.unitPriceMax) ? Number(h.unitPriceMax) : (isSet(h.unitPriceMin) ? Number(h.unitPriceMin) : null); if (mx === null || mx < a.unitMin) return false; }
+    if (a.unitMax !== undefined) { const mn = isSet(h.unitPriceMin) ? Number(h.unitPriceMin) : (isSet(h.unitPriceMax) ? Number(h.unitPriceMax) : null); if (mn === null || mn > a.unitMax) return false; }
+    return true;
+  }
+  if (!hasListingCond) return true;
+  return L.some(l => {
+    if (a.rooms && !(isSet(l.rooms) && (Number(l.rooms) >= 4 ? a.rooms.includes("4") : a.rooms.includes(String(l.rooms))))) return false;
+    if (a.areaMin !== undefined && !(isSet(l.areaSqm) && Number(l.areaSqm) >= a.areaMin)) return false;
+    if (a.areaMax !== undefined && !(isSet(l.areaSqm) && Number(l.areaSqm) <= a.areaMax)) return false;
+    if (a.floor && !(l.floorText && a.floor.includes(l.floorText))) return false;
+    if (a.elevator && l.hasElevator !== true) return false;
+    if (a.orient && !(l.orientation && a.orient.some(o => l.orientation.includes(o)))) return false;
+    if (a.deco && !(l.decoration && a.deco.includes(l.decoration))) return false;
+    if (a.age && !(l.houseAge && a.age.includes(l.houseAge))) return false;
+    if (a.own && !(l.ownership && a.own.includes(l.ownership))) return false;
+    if (a.nomort && l.mortgage !== "无抵押") return false;
+    if (a.drop && !priceDropOf(l)) return false;
+    if (a.totalMin !== undefined && !(isSet(l.totalPriceWan) && Number(l.totalPriceWan) >= a.totalMin)) return false;
+    if (a.totalMax !== undefined && !(isSet(l.totalPriceWan) && Number(l.totalPriceWan) <= a.totalMax)) return false;
+    if (a.unitMin !== undefined && !(isSet(l.unitPrice) && Number(l.unitPrice) >= a.unitMin)) return false;
+    if (a.unitMax !== undefined && !(isSet(l.unitPrice) && Number(l.unitPrice) <= a.unitMax)) return false;
+    return true;
+  });
+}
+function collectAdv(){
+  const num = id => { const el = $(`#${id}`); if (!el || el.value === "" || el.value === null) return undefined; return Number(el.value); };
+  const txt = id => { const el = $(`#${id}`); const v = el ? el.value.trim() : ""; return v || undefined; };
+  const a = {};
+  const t = num("a-total-min"); if (t !== undefined) a.totalMin = t;
+  const tx = num("a-total-max"); if (tx !== undefined) a.totalMax = tx;
+  const u = num("a-unit-min"); if (u !== undefined) a.unitMin = u;
+  const ux = num("a-unit-max"); if (ux !== undefined) a.unitMax = ux;
+  if ($("#a-drop").checked) a.drop = true;
+  const rooms = checkedVals("a-rooms"); if (rooms.length) a.rooms = rooms;
+  const ar = num("a-area-min"); if (ar !== undefined) a.areaMin = ar;
+  const arx = num("a-area-max"); if (arx !== undefined) a.areaMax = arx;
+  const fl = checkedVals("a-floor"); if (fl.length) a.floor = fl;
+  const orr = checkedVals("a-orient"); if (orr.length) a.orient = orr;
+  const dc = checkedVals("a-deco"); if (dc.length) a.deco = dc;
+  const ao = checkedVals("a-ageown");
+  const ages = ao.filter(v => v.startsWith("age:")).map(v => v.slice(4));
+  const owns = ao.filter(v => v.startsWith("own:")).map(v => v.slice(4));
+  if (ages.length) a.age = ages;
+  if (owns.length) a.own = owns;
+  if (ao.includes("elevator")) a.elevator = true;
+  if (ao.includes("nomort")) a.nomort = true;
+  const da = num("a-drive-a"); if (da !== undefined) a.driveA = da;
+  const db = num("a-drive-b"); if (db !== undefined) a.driveB = db;
+  const ea = num("a-ebike-a"); if (ea !== undefined) a.ebikeA = ea;
+  const eb = num("a-ebike-b"); if (eb !== undefined) a.ebikeB = eb;
+  const ta = num("a-transit-a"); if (ta !== undefined) a.transitA = ta;
+  const tb = num("a-transit-b"); if (tb !== undefined) a.transitB = tb;
+  const hs = txt("a-hsr-station"); if (hs) a.hsrStation = hs;
+  const hts = num("a-hsr-to-station"); if (hts !== undefined) a.hsrToStation = hts;
+  const hr = num("a-hsr-ride"); if (hr !== undefined) a.hsrRide = hr;
+  const sm = num("a-subway-max"); if (sm !== undefined) a.subwayMax = sm;
+  const hm = num("a-hosp-max"); if (hm !== undefined) a.hospMax = hm;
+  const pm = num("a-park-max"); if (pm !== undefined) a.parkMax = pm;
+  const mm = num("a-mall-max"); if (mm !== undefined) a.mallMax = mm;
+  const sp = num("a-super-max"); if (sp !== undefined) a.superMax = sp;
+  const mk = num("a-market-max"); if (mk !== undefined) a.marketMax = mk;
+  const sc = checkedVals("a-schools"); if (sc.length) a.schools = sc;
+  const st = $("#a-status").value; if (st) a.status = st;
+  const rt = num("a-rating-min"); if (rt !== undefined) a.ratingMin = rt;
+  const vf = $("#a-view-from").value; if (vf) a.viewFrom = vf;
+  const vt = $("#a-view-to").value; if (vt) a.viewTo = vt;
+  const flgs = checkedVals("a-flags");
+  if (flgs.includes("favComm")) a.favComm = true;
+  if (flgs.includes("favList")) a.favList = true;
+  if (flgs.includes("me")) a.me = true;
+  if (flgs.includes("partner")) a.partner = true;
+  if (flgs.includes("diff")) a.diff = true;
+  const ms = checkedVals("a-miss");
+  if (ms.includes("basic")) a.missBasic = true;
+  if (ms.includes("commute")) a.missCommute = true;
+  if (ms.includes("amen")) a.missAmen = true;
+  if (ms.includes("listing")) a.missListing = true;
+  if (ms.includes("detail")) a.missDetail = true;
+  return a;
+}
+function resetAdvForm(){
+  const form = $("#adv-wrap");
+  if (!form) return;
+  form.querySelectorAll("input[type=number], input[type=text], input[type=date]").forEach(el => el.value = "");
+  form.querySelectorAll("input[type=checkbox]").forEach(el => el.checked = false);
+  const st = $("#a-status"); if (st) st.value = "";
+}
+function closeAdv(){
+  $("#adv-wrap").classList.add("hidden");
+  if ($("#drawer").classList.contains("open") || !$("#ldetail-wrap").classList.contains("hidden")) return;
+  document.body.classList.remove("locked");
+}
+function refreshAdvCount(){
+  const cand = collectAdv();
+  const n = houses.filter(h => advMatch(h, cand)).length;
+  $("#adv-count").textContent = `符合 ${n} 个小区（共 ${houses.length} 个）`;
+}
+document.querySelectorAll("[data-close-adv]").forEach(el => el.addEventListener("click", closeAdv));
+$("#btn-adv").addEventListener("click", () => { $("#adv-wrap").classList.remove("hidden"); document.body.classList.add("locked"); refreshAdvCount(); });
+$("#btn-adv-apply").addEventListener("click", () => { adv = collectAdv(); closeAdv(); renderList(); });
+$("#btn-adv-clear").addEventListener("click", () => { adv = {}; resetAdvForm(); refreshAdvCount(); renderList(); });
+$("#adv-body").addEventListener("input", refreshAdvCount);
+$("#adv-body").addEventListener("change", refreshAdvCount);
+
+/* ==================== 个人信息页 ==================== */
+function profilePwCheck(cur, nw, cf){
+  if (!cur) return "请填写当前密码";
+  if (!nw || nw.length < 6) return "新密码至少 6 位";
+  if (nw !== cf) return "两次新密码不一致";
+  return null;
+}
+async function refreshTopbarAvatar(){
+  try {
+    if (!sb) return;
+    const { data } = await sb.auth.getUser();
+    const meta = data.user?.user_metadata || {};
+    const path = meta.avatar_path;
+    const el = $("#user-avatar");
+    if (!el) return;
+    if (path) {
+      const { data: sdata } = await sb.storage.from(MEDIA_BUCKET).createSignedUrl(path, 3600);
+      if (sdata?.signedUrl) { el.innerHTML = `<img src="${esc(sdata.signedUrl)}" alt="">`; return; }
+    }
+    el.textContent = (userEmail || data.user?.email || "").trim().charAt(0).toUpperCase() || "·";
+  } catch {}
+}
+async function renderProfile(main){
+  main.innerHTML = `<div class="imp-line">正在加载个人信息…</div>`;
+  let user = null;
+  try {
+    const { data } = await sb.auth.getUser();
+    user = data.user || null;
+  } catch {}
+  if (!user) { main.innerHTML = `<div class="imp-line">没取到登录信息，请重新登录。</div>`; return; }
+  const meta = user.user_metadata || {};
+  const displayName = meta.display_name || "";
+  let avatarUrl = "";
+  if (meta.avatar_path) {
+    try { const { data: sdata } = await sb.storage.from(MEDIA_BUCKET).createSignedUrl(meta.avatar_path, 3600); avatarUrl = sdata?.signedUrl || ""; } catch {}
+  }
+  const avatarBox = avatarUrl ? `<img src="${esc(avatarUrl)}" alt="">` : esc((displayName || user.email || "").trim().charAt(0).toUpperCase() || "·");
+  let pendingAvatarFile = null;
+  main.innerHTML = `<div style="max-width:560px">
+    <div class="pf-sec"><h4>头像</h4>
+      <div class="pf-avatar-row">
+        <div class="pf-avatar-img" id="pf-avatar-box">${avatarBox}</div>
+        <div>
+          <input type="file" id="pf-avatar-file" accept="image/*" style="margin-bottom:10px">
+          <div><button class="btn primary" id="btn-pf-avatar-save">保存头像</button></div>
+          <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">存在房源照片同一个私密存储桶里（avatars/你的账号/），换设备登录也能看到。</p>
+        </div>
+      </div>
+    </div>
+    <div class="pf-sec"><h4>个人信息</h4>
+      <div class="pf-field"><label>昵称<input type="text" id="pf-nickname" value="${esc(displayName)}" placeholder="如 家属院看房人"></label></div>
+      <div class="pf-field"><label>登录账号</label><div class="ro">${esc(user.email || "")}</div></div>
+      <button class="btn primary" id="btn-pf-info-save">保存个人信息</button>
+      <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">昵称存在账号资料里，换设备登录也能看到；账号邮箱不能在这里改。</p>
+    </div>
+    <div class="pf-sec"><h4>修改密码</h4>
+      <div class="pf-field"><label>当前密码<input type="password" id="pf-pw-cur" autocomplete="current-password"></label></div>
+      <div class="pf-field"><label>新密码（至少 6 位）<input type="password" id="pf-pw-new" autocomplete="new-password"></label></div>
+      <div class="pf-field"><label>确认新密码<input type="password" id="pf-pw-cf" autocomplete="new-password"></label></div>
+      <button class="btn primary" id="btn-pf-pw-save">修改密码</button>
+      <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">先验证当前密码，验证通过才改；改完后其他设备上的登录会在令牌过期后失效。</p>
+    </div>
+    <div class="pf-sec"><button class="btn" id="btn-pf-logout">退出登录</button></div>
+  </div>`;
+  $("#pf-avatar-file").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    pendingAvatarFile = f;
+    $("#pf-avatar-box").innerHTML = `<img src="${esc(URL.createObjectURL(f))}" alt="">`;
+  });
+  $("#btn-pf-avatar-save").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    if (!pendingAvatarFile) { toast("请先选一张图片"); return; }
+    btn.disabled = true; btn.textContent = "上传中…";
+    try {
+      const c = await compressImageFile(pendingAvatarFile);
+      const path = `avatars/${user.id}/avatar.jpg`;
+      const { error: upErr } = await sb.storage.from(MEDIA_BUCKET).upload(path, c.blob, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      const { error: metaErr } = await sb.auth.updateUser({ data: { avatar_path: path } });
+      if (metaErr) throw metaErr;
+      toast("头像已保存");
+      pendingAvatarFile = null;
+      refreshTopbarAvatar();
+      renderProfile(main);
+    } catch (err) { toast("头像保存失败：" + (err.message || err)); }
+    btn.disabled = false; btn.textContent = "保存头像";
+  });
+  $("#btn-pf-info-save").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    try {
+      const { error } = await sb.auth.updateUser({ data: { display_name: $("#pf-nickname").value.trim() } });
+      if (error) throw error;
+      toast("个人信息已保存");
+    } catch (err) { toast("保存失败：" + (err.message || err)); }
+    btn.disabled = false;
+  });
+  $("#btn-pf-pw-save").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    const cur = $("#pf-pw-cur").value, nw = $("#pf-pw-new").value, cf = $("#pf-pw-cf").value;
+    const errMsg = profilePwCheck(cur, nw, cf);
+    if (errMsg) { toast(errMsg); return; }
+    btn.disabled = true; btn.textContent = "修改中…";
+    try {
+      const { error: signErr } = await sb.auth.signInWithPassword({ email: user.email, password: cur });
+      if (signErr) throw new Error("当前密码不对");
+      const { error } = await sb.auth.updateUser({ password: nw });
+      if (error) throw error;
+      $("#pf-pw-cur").value = ""; $("#pf-pw-new").value = ""; $("#pf-pw-cf").value = "";
+      toast("密码已修改");
+    } catch (err) { toast("修改失败：" + (err.message || err)); }
+    btn.disabled = false; btn.textContent = "修改密码";
+  });
+  $("#btn-pf-logout").addEventListener("click", doLogout);
+}
 
 /* ==================== 全局按键 / 启动 ==================== */
 document.addEventListener("keydown", e => {
