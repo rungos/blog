@@ -67,15 +67,17 @@
   .search-box input{height:48px; border-radius:999px; background:var(--soft); border:1.5px solid transparent; padding:0 18px 0 44px; font-size:15px}
   .search-box input:focus{background:#fff; border-color:transparent; box-shadow:0 0 0 2px rgba(17,17,17,.65)}
   .search-box .ic{position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:30px; pointer-events:none}
-  .tb-actions{display:flex; align-items:center; gap:10px; flex:none}
-  .tb-corner{display:flex; align-items:center; gap:10px; flex:none}
+  .tb-corner{display:flex; align-items:center; gap:10px; flex:none; position:relative}
+  .avatar-menu{position:absolute; right:0; top:calc(100% + 8px); background:#fff; border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.07); padding:6px; min-width:168px; z-index:200; display:flex; flex-direction:column}
+  .avatar-menu button{display:block; width:100%; text-align:left; padding:10px 14px; border-radius:10px; font-size:14.5px; color:var(--ink); background:transparent; cursor:pointer}
+  .avatar-menu button:hover{background:var(--soft)}
+  .avatar-menu .am-sep{height:1px; background:#f1f1f1; margin:6px 8px}
+  .avatar-dot{position:absolute; top:1px; right:1px; width:10px; height:10px; border-radius:50%; background:#E60023; border:2px solid #fff; z-index:2}
   @media (min-width:768px){
     .tb-inner{flex-wrap:wrap; gap:12px 18px}
     .brand{order:1}
     .search-box{order:2}
     .tb-corner{order:3}
-    .tb-actions{order:4; flex-basis:100%; margin-left:0; max-width:100%; overflow-x:auto; scrollbar-width:none}
-    .tb-actions::-webkit-scrollbar{display:none}
   }
   .avatar-btn{width:40px; height:40px; border-radius:50%; background:#111; color:#fff; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:background .15s ease}
   .avatar-btn:hover{background:#333}
@@ -343,11 +345,11 @@
   .lb-name{font-size:13px; color:var(--muted); max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .lb-bar .btn{height:38px; padding:0 18px; flex:none}
   /* ---------- 房源收藏视图 ---------- */
-  .fav-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr)); gap:18px}
-  .fav-item{min-width:0}
-  .fav-owner{font-size:13px; color:var(--muted); margin:0 2px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .fav-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr)); gap:18px; align-items:stretch}
+  .fav-item{min-width:0; display:flex; flex-direction:column}
+  .fav-owner{font-size:13px; color:var(--muted); margin:0 2px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:20px; min-height:20px; flex:none}
   .fav-owner b{color:var(--ink); font-weight:600; font-size:13.5px}
-  .fav-item .lcard{margin-bottom:0}
+  .fav-item .lcard{margin-bottom:0; flex:1}
   .dd-wrap.dd-off{opacity:.45; pointer-events:none}
   /* ---------- floor plan (户型图) ---------- */
   .lcard{display:flex; gap:12px}
@@ -422,10 +424,7 @@
     .tb-corner .btn{padding:8px 13px; font-size:13px}
     .search-box{order:3; flex-basis:100%; max-width:none; margin:0}
     .search-box input{height:44px}
-    .tb-actions{order:4; flex-basis:100%; margin-left:0; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
-    .tb-actions::-webkit-scrollbar{display:none}
-    .tb-actions .btn{padding:8px 13px; font-size:13px; flex:none}
-    .tb-actions .avatar-btn{flex:none}
+    .tb-corner .avatar-btn{flex:none}
     .page{padding:20px 14px 120px}
     .title-row h1{font-size:25px}
     .group{margin-top:26px}
@@ -489,17 +488,20 @@
     <div class="tb-inner">
       <div class="brand"><span class="logo-mark" style="display:inline-flex;flex:none"><svg width="30" height="30" viewBox="0 0 64 64" role="img" aria-label="栖居 logo"><defs><linearGradient id="lgrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b2b2b"/><stop offset="1" stop-color="#050505"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#lgrad2)"/><path d="M17 32.5 L32 19.5 L47 32.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22.5 29.5 V43.5 a2.5 2.5 0 0 0 2.5 2.5 h14 a2.5 2.5 0 0 0 2.5-2.5 V29.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round"/><rect x="29" y="36.5" width="6" height="9.5" rx="3" fill="#E60023"/></svg></span>栖居</div>
       <div class="search-box"><span class="ic">⌕</span><input id="search" type="search" placeholder="搜小区名 / 户型 / 朝向 / 地铁站 / 备注…"></div>
-      <div class="tb-actions">
-        <button class="btn" id="btn-import">导入</button>
-        <button class="btn" id="btn-export">导出</button>
-        <button class="btn" id="btn-calc">测算</button>
-        <button class="btn" id="btn-req">购房需求</button>
-        <button class="btn" id="btn-adv">高级筛选</button>
-        <button class="btn" id="btn-undo-import" style="display:none">撤销导入</button>
-      </div>
       <div class="tb-corner">
+        <button class="btn" id="btn-import">导入</button>
         <button class="btn primary" id="btn-add-top">+ 新增</button>
-        <button class="avatar-btn" id="btn-profile" title="个人信息"><span id="user-avatar">·</span></button>
+        <button class="avatar-btn" id="btn-profile" title="菜单"><span id="user-avatar">·</span><span class="avatar-dot hidden" id="avatar-dot"></span></button>
+        <div class="avatar-menu hidden" id="avatar-menu">
+          <button type="button" data-menu="export">导出</button>
+          <button type="button" data-menu="calc">测算</button>
+          <button type="button" data-menu="req">购房需求</button>
+          <button type="button" data-menu="adv">高级筛选</button>
+          <button type="button" data-menu="undo" id="menu-undo" style="display:none">撤销导入</button>
+          <div class="am-sep"></div>
+          <button type="button" data-menu="profile">个人信息</button>
+          <button type="button" data-menu="logout">退出登录</button>
+        </div>
       </div>
     </div>
     <div class="tb-filters">
@@ -723,7 +725,7 @@
           <label>公园<input type="number" id="a-park-max" min="0" step="0.1"></label>
           <label>商场<input type="number" id="a-mall-max" min="0" step="0.1"></label>
           <label>超市<input type="number" id="a-super-max" min="0" step="0.1"></label>
-          <label>菜市场<input type="number" id="a-market-max" min="0" step="0.1"></label>
+          <label>休闲<input type="number" id="a-leisure-max" min="0" step="0.1"></label>
         </div>
         <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">学校（有即算）</div><div class="req-checks" id="a-schools">
           <label><input type="checkbox" value="kindergartens">幼儿园</label><label><input type="checkbox" value="primarySchools">小学</label><label><input type="checkbox" value="middleSchools">中学</label><label><input type="checkbox" value="universities">大学</label>
@@ -957,7 +959,7 @@ function enterApp(){
   $("#view-app").classList.remove("hidden");
   if (userEmail) {
     $("#user-avatar").textContent = userEmail.trim().charAt(0).toUpperCase() || "·";
-    $("#btn-profile").title = userEmail + " · 个人信息";
+    $("#btn-profile").title = userEmail + " · 菜单";
   }
   refreshTopbarAvatar();
   syncReqFromCloud();
@@ -977,7 +979,26 @@ $("#login-form").addEventListener("submit", async (e) => {
   enterApp();
 });
 async function doLogout(){ if (sb) await sb.auth.signOut(); houses = []; showLogin(); }
-$("#btn-profile").addEventListener("click", () => setTab("profile"));
+$("#btn-profile").addEventListener("click", (e) => { e.stopPropagation(); $("#avatar-menu").classList.toggle("hidden"); });
+document.addEventListener("click", (e) => {
+  const m = $("#avatar-menu");
+  if (!m || m.classList.contains("hidden")) return;
+  if (!e.target.closest("#avatar-menu") && !e.target.closest("#btn-profile")) m.classList.add("hidden");
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#avatar-menu")?.classList.add("hidden"); });
+$("#avatar-menu").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-menu]");
+  if (!b) return;
+  const act = b.dataset.menu;
+  $("#avatar-menu").classList.add("hidden");
+  if (act === "export") doExport();
+  else if (act === "calc") openCalc();
+  else if (act === "req") { fillReqForm(); $("#req-wrap").classList.remove("hidden"); document.body.classList.add("locked"); }
+  else if (act === "adv") { $("#adv-wrap").classList.remove("hidden"); document.body.classList.add("locked"); refreshAdvCount(); }
+  else if (act === "undo") doUndoImport();
+  else if (act === "profile") setTab("profile");
+  else if (act === "logout") doLogout();
+});
 
 /* ==================== 数据层（CRUD 按 app_id 匹配） ==================== */
 async function loadHouses(){
@@ -1122,7 +1143,7 @@ function searchHay(h){
     if (isSet(l.totalPriceWan)) parts.push(l.totalPriceWan + "万");
     if (isSet(l.unitPrice)) parts.push(String(l.unitPrice));
   }
-  for (const k of ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","markets","parks","schools"]) {
+  for (const k of ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"]) {
     const arr = h[k];
     if (Array.isArray(arr)) for (const it of arr) if (it && it.name) parts.push(it.name);
   }
@@ -1218,7 +1239,7 @@ function favListingRows(){
 function favCardHTML(h, l, showOwner){
   const locParts = [h.city, h.district, h.sector].filter(isSet);
   const loc = locParts.length ? `<span> · ${esc(locParts.join(" · "))}</span>` : "";
-  const owner = showOwner === false ? "" : `<div class="fav-owner"><b>${esc(h.community || "（未命名）")}</b>${loc}</div>`;
+  const owner = `<div class="fav-owner">${showOwner === false ? "" : `<b>${esc(h.community || "（未命名）")}</b>${loc}`}</div>`;
   return `<div class="fav-item" data-fav-house="${h.id}">${owner}${listingCardHTML(l)}</div>`;
 }
 function renderFavListings(main){
@@ -1327,10 +1348,8 @@ function kv(k, v, linkifyIt){
   if (!kvHas(v)) return "";
   return `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${linkifyIt ? linkify(v) : esc(v)}</div></div>`;
 }
-/* 周边配套：细分类逐块展示（地铁/幼儿园/小学/中学/大学/医院/商场/超市/菜市场/公园），
-   旧 schools 合集仅在细分类学校全空时以「学校」块兜底；每块按距离升序、默认 3 项、超出可展开 */
-const AMEN_CATS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["markets","菜市场"],["parks","公园"]];
-const AMEN_SCHOOL_KEYS = ["kindergartens","primarySchools","middleSchools","universities"];
+/* 周边配套：细分类逐块展示（地铁/幼儿园/小学/中学/大学/医院/商场/超市/公园/休闲），每块按距离升序、默认 3 项、超出可展开 */
+const AMEN_CATS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
 let amenOpenCats = new Set();
 function amenDist(d){
   if (!isSet(d)) return "";
@@ -1359,7 +1378,6 @@ function amenCatBlock(key, title, arr){
 function amenAreaHTML(h){
   let blocks = "";
   for (const [key, title] of AMEN_CATS) blocks += amenCatBlock(key, title, h[key]);
-  if (!AMEN_SCHOOL_KEYS.some(k => amenItems(h[k]).length)) blocks += amenCatBlock("schools", "学校", h.schools);
   return blocks ? `<section class="dsec amen-area"><h4>周边配套</h4>${blocks}</section>` : "";
 }
 function commuteLine(label, km, min){
@@ -2451,7 +2469,7 @@ const FORM_SECTIONS = [
     ["hasGarbageStation","附近垃圾站","tri"], ["nearElevated","附近高架","tri"], ["noiseLevel","噪音","text"]
   ]]
 ];
-const AMEN_FIELDS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["schools","学校（旧）"],["markets","菜市场（旧）"]];
+const AMEN_FIELDS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
 
 function triSel(val){ return (val===1||val===true) ? "1" : ((val===0||val===false) ? "0" : ""); }
 function fieldInput(key, label, type, val, ph, hint){
@@ -2490,7 +2508,7 @@ function amenRow(a){
 }
 function openEdit(id){
   editingId = id;
-  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], schools:[], markets:[], malls:[], supermarkets:[], parks:[] };
+  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], malls:[], supermarkets:[], parks:[], leisure:[] };
   if (!h) return;
   $("#edit-title").textContent = id ? "编辑 · " + (h.community||"") : "新增一套";
   let html = "";
@@ -2612,7 +2630,7 @@ function isEmptyVal(v){ return v === null || v === undefined || v === "" || (Arr
 /* ==================== 数据完整度 ==================== */
 function completenessGroups(h){
   const L = getListings(h);
-  const amenKeys = ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","markets","parks"];
+  const amenKeys = ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"];
   return [
     { label: "基本信息", ok: isSet(h.unitPriceMin) && isSet(h.builtYear) },
     { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.commuteAMinutes) || isSet(h.ebikeAMinutes) || isSet(h.transitAMinutes) || isSet(h.hsrStationName) },
@@ -2677,7 +2695,8 @@ const UNDO_KEY = "qiju_undo_import_v1";
 function refreshUndoBtn(){
   let has = false;
   try { has = !!localStorage.getItem(UNDO_KEY); } catch {}
-  $("#btn-undo-import").style.display = has ? "" : "none";
+  const mu = $("#menu-undo"); if (mu) mu.style.display = has ? "" : "none";
+  const dot = $("#avatar-dot"); if (dot) dot.classList.toggle("hidden", !has);
 }
 function diffRecord(ex, mg){
   const out = { fields: 0, newListings: [], priceChanges: [], statusChanges: 0, favChanges: 0, listingFieldFills: 0, changed: false };
@@ -2776,13 +2795,13 @@ $("#btn-apply-import").addEventListener("click", async () => {
     document.querySelectorAll("[data-close-import]").forEach(b => b.disabled = false);
   } finally { importApplying = false; }
 });
-$("#btn-undo-import").addEventListener("click", async () => {
+async function doUndoImport(){
   let snap = null;
   try { snap = JSON.parse(localStorage.getItem(UNDO_KEY) || "null"); } catch {}
   if (!snap || !snap.before) { toast("没有可撤销的导入"); return; }
   const when = new Date(snap.ts).toLocaleString("zh-CN");
   if (!confirm(`撤销 ${when} 的那次导入？被改动的记录会恢复到导入前，新增的记录会被删除。此操作只针对最近一次导入。`)) return;
-  const ub = $("#btn-undo-import"); ub.disabled = true; ub.textContent = "撤销中…";
+  const ub = $("#menu-undo"); ub.disabled = true; ub.textContent = "撤销中…";
   try {
     for (const [id, before] of Object.entries(snap.before)) {
       if (before === null) await dbDelete(Number(id));
@@ -2794,8 +2813,8 @@ $("#btn-undo-import").addEventListener("click", async () => {
     loadHouses();
   } catch (err) { toast("撤销失败：" + err.message); }
   finally { ub.disabled = false; ub.textContent = "撤销导入"; }
-});
-$("#btn-export").addEventListener("click", () => {
+}
+function doExport(){
   const blob = new Blob([JSON.stringify(houses, null, 1)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -2803,7 +2822,7 @@ $("#btn-export").addEventListener("click", () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast("已导出全部 " + houses.length + " 条数据");
-});
+}
 refreshUndoBtn();
 
 
@@ -2879,7 +2898,7 @@ function openCalc(totalWan){
   $("#calc-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 }
-$("#btn-calc").addEventListener("click", () => openCalc());
+
 $("#ldetail-calc").addEventListener("click", () => {
   if (!ldetailCtx) return;
   const h = byId(ldetailCtx.houseId); if (!h) return;
@@ -3157,7 +3176,7 @@ function fillReqForm(){
   setNum("r-block-year", b.year);
   $("#r-block-sectors").value = (b.sectors || []).join(",");
 }
-$("#btn-req").addEventListener("click", () => { fillReqForm(); $("#req-wrap").classList.remove("hidden"); document.body.classList.add("locked"); });
+
 $("#btn-req-save").addEventListener("click", async () => { userReq = collectReq(); const ok = await saveReq(); closeReq(); toast(ok ? "需求已保存（已同步到云端）" : "需求已存在本机，云端同步失败，联网后重新保存一次"); if (viewMode !== "match") setTab("match"); else renderList(); });
 $("#btn-req-clear").addEventListener("click", async () => { userReq = { wants: {}, blocks: {} }; const ok = await saveReq(); fillReqForm(); toast(ok ? "需求已清空（云端同步）" : "本地已清空，云端同步失败"); });
 
@@ -3195,7 +3214,7 @@ function advMatch(h, a){
   if (!distOk("parks", a.parkMax)) return false;
   if (!distOk("malls", a.mallMax)) return false;
   if (!distOk("supermarkets", a.superMax)) return false;
-  if (!distOk("markets", a.marketMax)) return false;
+  if (!distOk("leisure", a.leisureMax)) return false;
   if (a.schools) for (const k of a.schools) if (!(Array.isArray(h[k]) && h[k].length)) return false;
   const miss = completenessOf(h);
   if (a.missBasic && !miss.includes("基本信息")) return false;
@@ -3270,7 +3289,7 @@ function collectAdv(){
   const pm = num("a-park-max"); if (pm !== undefined) a.parkMax = pm;
   const mm = num("a-mall-max"); if (mm !== undefined) a.mallMax = mm;
   const sp = num("a-super-max"); if (sp !== undefined) a.superMax = sp;
-  const mk = num("a-market-max"); if (mk !== undefined) a.marketMax = mk;
+  const lz = num("a-leisure-max"); if (lz !== undefined) a.leisureMax = lz;
   const sc = checkedVals("a-schools"); if (sc.length) a.schools = sc;
   const st = $("#a-status").value; if (st) a.status = st;
   const rt = num("a-rating-min"); if (rt !== undefined) a.ratingMin = rt;
@@ -3308,7 +3327,7 @@ function refreshAdvCount(){
   $("#adv-count").textContent = `符合 ${n} 个小区（共 ${houses.length} 个）`;
 }
 document.querySelectorAll("[data-close-adv]").forEach(el => el.addEventListener("click", closeAdv));
-$("#btn-adv").addEventListener("click", () => { $("#adv-wrap").classList.remove("hidden"); document.body.classList.add("locked"); refreshAdvCount(); });
+
 $("#btn-adv-apply").addEventListener("click", () => { adv = collectAdv(); closeAdv(); renderList(); });
 $("#btn-adv-clear").addEventListener("click", () => { adv = {}; resetAdvForm(); refreshAdvCount(); renderList(); });
 $("#adv-body").addEventListener("input", refreshAdvCount);
