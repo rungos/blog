@@ -33,6 +33,7 @@
   body.locked{overflow:hidden}
   .num{font-variant-numeric:tabular-nums}
 
+
   /* ---------- buttons ---------- */
   .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:9px 18px; font-size:14px; font-weight:600; transition:all .16s ease; white-space:nowrap}
   .btn:hover{border-color:#111; box-shadow:0 2px 8px rgba(0,0,0,.07)}
@@ -894,6 +895,7 @@ function totalRangeStr(h){
   return "";
 }
 function triStr(v){ return v===1||v===true ? "有" : (v===0||v===false ? "无" : ""); }
+function elevStr(v){ return typeof v === "string" ? v.trim() : triStr(v); }
 function gradIdx(name){
   const s = String(name||""); let n = 0;
   for (let i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0;
@@ -1420,7 +1422,7 @@ function detailHTML(h){
   s += kv("建筑类型", h.buildingType);
   s += kv("楼栋数", isSet(h.totalBuildings) ? h.totalBuildings+" 栋" : "");
   s += kv("总户数", isSet(h.totalHouseholds) ? h.totalHouseholds+" 户" : "");
-  s += kv("电梯", triStr(h.hasElevator));
+  s += kv("电梯", elevStr(h.hasElevator));
   s += kv("梯户比", h.elevatorRatio);
   s += kv("总楼层", isSet(h.totalFloors) ? h.totalFloors+" 层" : "");
   s += kv("容积率/密度", h.density);
@@ -1982,7 +1984,7 @@ $("#drawer-scroll").addEventListener("click", e => {
 /* ==================== 实拍媒体（图片 / 视频 · Supabase Storage） ==================== */
 const MEDIA_BUCKET = "media";
 const AVATAR_BUCKET = "avatars";
-const MEDIA_MAX_VIDEO = 50 * 1024 * 1024;
+const MEDIA_TOTAL_LIMIT = 1024 * 1024 * 1024;
 const signedUrlCache = new Map();
 let mediaCtx = null;
 let lightboxCtx = null;
@@ -2084,7 +2086,6 @@ async function uploadOneMedia(h, l, file){
   const isVideo = type.startsWith("video/");
   const isImage = type.startsWith("image/");
   if (!isVideo && !isImage) { toast("「" + (file.name || "文件") + "」不是图片或视频，已跳过"); return null; }
-  if (isVideo && file.size > MEDIA_MAX_VIDEO) { toast("视频「" + (file.name || "") + "」超过 50MB，已跳过"); return null; }
   let blob = file, ext = mediaExtOf(file), size = file.size;
   if (isImage) { const c = await compressImageFile(file); blob = c.blob; ext = c.ext; size = c.size; }
   if (!ext) ext = isVideo ? "mp4" : "jpg";
@@ -2121,11 +2122,14 @@ $("#media-file").addEventListener("change", async e => {
   const oldMedia = getMedia(owner).slice();
   const added = [];
   let bucketMissing = false;
+  const baseBytes = allMediaBytes();
+  let batchBytes = 0;
   for (let i = 0; i < files.length; i++) {
     btns.forEach(b => { b.textContent = `上传中 ${i + 1}/${files.length}…`; });
+    if (baseBytes + batchBytes + files[i].size > MEDIA_TOTAL_LIMIT) { toast("再传就超过 1GB 总量了，已跳过「" + (files[i].name || "文件") + "」"); continue; }
     try {
       const item = await uploadOneMedia(h, l, files[i]);
-      if (item) added.push(item);
+      if (item) { added.push(item); batchBytes += item.size || 0; }
     } catch (err) {
       if (isBucketMissingErr(err)) { bucketMissing = true; break; }
       toast("「" + (files[i].name || "文件") + "」上传失败：" + err.message);
@@ -2394,7 +2398,7 @@ const CMP_FIELDS = [
   ["挂牌均价", h => listUnitStr(h)],
   ["挂牌总价", h => listTotalStr(h) || h.totalPriceNote || ""],
   ["最近成交价", h => dealStr(h)],
-  ["电梯", h => triStr(h.hasElevator)],
+  ["电梯", h => elevStr(h.hasElevator)],
   ["总楼层", h => isSet(h.totalFloors)?h.totalFloors+"":""],
   ["建成年", h => h.builtYear||""],
   ["梯户比", h => h.elevatorRatio||""],
@@ -2441,7 +2445,7 @@ const FORM_SECTIONS = [
   ["房屋与小区", [
     ["builtYear","建成年","num"], ["buildingType","建筑类型","msel"],
     ["totalBuildings","楼栋数","num"], ["totalHouseholds","总户数","num"],
-    ["hasElevator","电梯","tri"], ["elevatorRatio","梯户比（如 一梯两户/步梯）","text"],
+    ["hasElevator","电梯","text","如：有、无、部分楼栋有"], ["elevatorRatio","梯户比（如 一梯两户/步梯）","text"],
     ["totalFloors","总楼层","num"],
     ["density","容积率/密度","text"], ["greenery","绿化","text"],
     ["propertyCompany","物业公司","text"], ["propertyFee","物业费","text"], ["industrialPark","附近产业园","text"]
@@ -2521,6 +2525,9 @@ function openEdit(id){
       <button type="button" data-rate="0" class="${!h.rating?"on":""}">无</button>
     </div></div></div></section>`;
   const hv = { ...h };
+  if (hv.hasElevator === true || hv.hasElevator === 1) hv.hasElevator = "有";
+  else if (hv.hasElevator === false || hv.hasElevator === 0) hv.hasElevator = "无";
+  else if (hv.hasElevator == null) hv.hasElevator = "";
   if (!isSet(hv.dealPriceMin) && !isSet(hv.dealPriceMax) && isSet(hv.recentDealPrice)) {
     hv.dealPriceMin = hv.recentDealPrice;
     hv.dealPriceMax = hv.recentDealPrice;
