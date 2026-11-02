@@ -141,6 +141,29 @@
   .calc-grid label input,.calc-grid label select{margin-top:5px; color:var(--ink)}
   .calc-out{margin-top:16px; background:var(--soft); border-radius:14px; padding:14px 16px; font-size:14px; line-height:2}
   .calc-out b{font-size:17px}
+  .req-sec{margin-bottom:18px}
+  .req-sec h4{margin:0 0 10px; font-size:14px}
+  .req-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .req-grid label{font-size:13px; color:var(--muted); display:block}
+  .req-grid label input,.req-grid label select{margin-top:5px; color:var(--ink)}
+  .req-checks{display:flex; flex-wrap:wrap; gap:8px}
+  .req-checks label{display:flex; align-items:center; gap:5px; font-size:13.5px; color:var(--ink); border:1.5px solid var(--line); border-radius:999px; padding:6px 12px; cursor:pointer}
+  .req-checks label input{width:auto; margin:0; padding:0}
+  .req-checks label:has(input:checked){border-color:var(--red); color:var(--red); background:#FFF1F3}
+  .mrow{border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-bottom:10px; background:var(--surface); cursor:pointer}
+  .mrow.dim{opacity:.55}
+  .mrow-head{display:flex; justify-content:space-between; align-items:center; gap:10px}
+  .mrow-head b{font-size:15.5px}
+  .mscore{font-weight:700; color:#2E7D32; white-space:nowrap}
+  .mscore.low{color:#C62828}
+  .mrow-sub{font-size:13px; color:var(--muted); margin-top:5px}
+  .mrow-tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
+  .mtag{font-size:12px; padding:3px 9px; border-radius:999px; background:#EDF7ED; color:#2E7D32}
+  .mtag.miss{background:#FDECEC; color:#C62828}
+  .mtag.block{background:#FFF4E5; color:#9A6200}
+  .mstats{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px}
+  .mstat{background:var(--soft); border-radius:14px; padding:10px 16px; font-size:13px; color:var(--muted)}
+  .mstat b{display:block; font-size:19px; color:var(--ink)}
   #qiju-map{height:calc(100dvh - 250px); min-height:430px; border-radius:18px; z-index:0; background:var(--soft)}
   .map-note{font-size:13px; color:var(--muted); margin:0 2px 10px}
   .map-pop b{font-size:14px}
@@ -445,6 +468,7 @@
         <button class="btn" id="btn-import">导入</button>
         <button class="btn" id="btn-export">导出</button>
         <button class="btn" id="btn-calc">测算</button>
+        <button class="btn" id="btn-req">购房需求</button>
         <button class="btn" id="btn-undo-import" style="display:none">撤销导入</button>
         <button class="btn primary" id="btn-add-top">+ 新增</button>
         <button class="avatar-btn" id="btn-logout" title="退出"><span id="user-avatar">·</span></button>
@@ -459,6 +483,7 @@
         <button class="mchip" data-tab="fav">关注小区</button>
         <button class="mchip" data-tab="lfav">★ 关注房源</button>
       <button class="mchip" data-tab="map">地图</button>
+      <button class="mchip" data-tab="match">匹配</button>
       </div>
       <div class="pill-selects">
         <select class="pillsel" id="f-city"></select>
@@ -599,7 +624,8 @@
     <div class="modal-body">
       <div class="calc-grid">
         <label>总价（万元）<input type="number" id="c-total" min="0" placeholder="如 300"></label>
-        <label>首付成数<select id="c-down"><option value="0.2">2 成</option><option value="0.25">2.5 成</option><option value="0.3" selected>3 成</option><option value="0.35">3.5 成</option><option value="0.4">4 成</option><option value="0.5">5 成</option></select></label>
+        <label>首付成数<select id="c-down"><option value="0.2">2 成</option><option value="0.25">2.5 成</option><option value="0.3" selected>3 成</option><option value="0.35">3.5 成</option><option value="0.4">4 成</option><option value="0.5">5 成</option><option value="custom">自定义金额</option></select></label>
+        <label>首付金额（万元，没有固定成数时填这个）<input type="number" id="c-down-amt" min="0" placeholder="如 90"></label>
         <label>贷款年限<select id="c-years"><option value="30" selected>30 年</option><option value="25">25 年</option><option value="20">20 年</option><option value="15">15 年</option><option value="10">10 年</option></select></label>
         <label>公积金贷款（万元，0=纯商贷）<input type="number" id="c-fund" min="0" value="0"></label>
         <label>商贷年利率 %<input type="number" id="c-rate-biz" step="0.01" value="3.5"></label>
@@ -608,6 +634,52 @@
       <div class="calc-out" id="c-out">填入总价后自动计算（等额本息）。利率是示例值，按银行实际改。</div>
     </div>
     <div class="modal-foot"><button class="btn" data-close-calc>关闭</button></div>
+  </div>
+</div>
+
+<!-- ================= 购房需求弹窗 ================= -->
+<div class="modal-wrap hidden" id="req-wrap">
+  <div class="modal-scrim" data-close-req></div>
+  <div class="modal" style="width:620px">
+    <div class="modal-head"><h2>购房需求</h2><button class="modal-close" data-close-req>✕</button></div>
+    <div class="modal-body">
+      <div class="req-sec"><h4>想要的（满足越多，匹配度越高）</h4>
+        <div class="req-grid">
+          <label>总价上限（万元）<input type="number" id="r-total-max" min="0" placeholder="如 300"></label>
+          <label>单价上限（元/㎡）<input type="number" id="r-unit-max" min="0" placeholder="如 45000"></label>
+          <label>面积下限（㎡）<input type="number" id="r-area-min" min="0" placeholder="如 60"></label>
+          <label>通勤A上限（分钟）<input type="number" id="r-commute-a" min="0" placeholder="到你公司"></label>
+          <label>通勤B上限（分钟）<input type="number" id="r-commute-b" min="0" placeholder="到对象公司"></label>
+          <label>地铁最近距离上限（公里）<input type="number" id="r-subway-max" min="0" step="0.1" placeholder="如 1"></label>
+        </div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">户型</div><div class="req-checks" id="r-rooms">
+          <label><input type="checkbox" value="1">1室</label><label><input type="checkbox" value="2">2室</label><label><input type="checkbox" value="3">3室</label><label><input type="checkbox" value="4">4室+</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">朝向（含即算）</div><div class="req-checks" id="r-orient">
+          <label><input type="checkbox" value="南">南</label><label><input type="checkbox" value="北">北</label><label><input type="checkbox" value="东">东</label><label><input type="checkbox" value="西">西</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">装修</div><div class="req-checks" id="r-deco">
+          <label><input type="checkbox" value="精装">精装</label><label><input type="checkbox" value="简装">简装</label><label><input type="checkbox" value="毛坯">毛坯</label><label><input type="checkbox" value="其他">其他</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">楼层</div><div class="req-checks" id="r-floor">
+          <label><input type="checkbox" value="低楼层">低楼层</label><label><input type="checkbox" value="中楼层">中楼层</label><label><input type="checkbox" value="高楼层">高楼层</label>
+        </div></div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">房龄 / 产权</div><div class="req-checks" id="r-ageown">
+          <label><input type="checkbox" value="age:满五年">满五年</label><label><input type="checkbox" value="age:满两年">满两年</label><label><input type="checkbox" value="own:商品房">商品房</label><label><input type="checkbox" value="own:已购公房">已购公房</label><label><input type="checkbox" value="elevator">有电梯</label>
+        </div></div>
+      </div>
+      <div class="req-sec"><h4>不想要的（命中即排除）</h4>
+        <div class="req-checks" id="r-blocks">
+          <label><input type="checkbox" value="top">顶层</label><label><input type="checkbox" value="noelev">无电梯</label><label><input type="checkbox" value="mort">有抵押</label><label><input type="checkbox" value="pub">已购公房</label><label><input type="checkbox" value="north">朝北</label><label><input type="checkbox" value="west">朝西</label>
+        </div>
+        <div class="req-grid" style="margin-top:12px">
+          <label>建成早于（年）<input type="number" id="r-block-year" min="0" placeholder="如 1990"></label>
+          <label>排除板块（逗号分隔）<input type="text" id="r-block-sectors" placeholder="如 回龙观,古城"></label>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--muted)">需求只存在这台设备/浏览器里（换设备要重填）。保存后点「匹配」页签看评分排序。</p>
+    </div>
+    <div class="modal-foot"><button class="btn" id="btn-req-clear">清空</button><button class="btn" data-close-req>取消</button><button class="btn primary" id="btn-req-save">保存并看匹配</button></div>
   </div>
 </div>
 
@@ -871,12 +943,14 @@ function renderFilterSummary(){
 
 
 /* ==================== 页签 ==================== */
-const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源", map: "地图视图" };
+const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源", map: "地图视图", match: "匹配结果" };
 function setTab(tab){
   if (tab === "lfav") {
     viewMode = (viewMode === "lfav") ? "houses" : "lfav";
   } else if (tab === "map") {
     viewMode = (viewMode === "map") ? "houses" : "map";
+  } else if (tab === "match") {
+    viewMode = (viewMode === "match") ? "houses" : "match";
   } else {
     viewMode = "houses";
     curTab = tab;
@@ -889,9 +963,9 @@ function setTab(tab){
   if (ddWrap) ddWrap.classList.toggle("dd-off", viewMode !== "houses");
   document.querySelectorAll("#mobile-chips .mchip").forEach(b => {
     const t = b.dataset.tab;
-    b.classList.toggle("active", t === "lfav" ? viewMode === "lfav" : (t === "map" ? viewMode === "map" : (viewMode === "houses" && t === curTab)));
+    b.classList.toggle("active", t === "lfav" ? viewMode === "lfav" : (t === "map" ? viewMode === "map" : (t === "match" ? viewMode === "match" : (viewMode === "houses" && t === curTab))));
   });
-  $("#page-title").textContent = viewMode === "lfav" ? TAB_TITLES.lfav : (viewMode === "map" ? TAB_TITLES.map : (TAB_TITLES[curTab] || "全部房源"));
+  $("#page-title").textContent = viewMode === "lfav" ? TAB_TITLES.lfav : (viewMode === "map" ? TAB_TITLES.map : (viewMode === "match" ? TAB_TITLES.match : (TAB_TITLES[curTab] || "全部房源")));
   renderStats();
   renderList();
 }
@@ -935,11 +1009,11 @@ function cardHTML(h, showLoc, idx){
   if (isSet(h.sector)) locParts.push(h.sector);
   if (isSet(h.builtYear)) locParts.push("建于 " + h.builtYear);
   { const cp = [];
-    const aMin = isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes;
-    const bMin = isSet(h.driveBMinutes) ? h.driveBMinutes : h.commuteBMinutes;
+    const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : (isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes);
+    const bMin = isSet(h.ebikeBMinutes) ? h.ebikeBMinutes : (isSet(h.driveBMinutes) ? h.driveBMinutes : h.commuteBMinutes);
     if (isSet(aMin)) cp.push("我 " + aMin + "分");
     if (isSet(bMin)) cp.push("对象 " + bMin + "分");
-    if (cp.length) locParts.push("通勤 " + cp.join(" · "));
+    if (cp.length) locParts.push((isSet(h.ebikeAMinutes) || isSet(h.ebikeBMinutes) ? "电车 " : "通勤 ") + cp.join(" · "));
   }
   const first = name.trim().charAt(0) || "房";
   const inCmp = compareSet.has(h.id);
@@ -983,7 +1057,7 @@ function favListingRows(){
   const maxC = $("#f-maxcommute") ? $("#f-maxcommute").value : "";
   if (dropSel === "dropped") rowsF = rowsF.filter(r => priceDropOf(r.l));
   if (maxP) rowsF = rowsF.filter(r => isSet(r.l.totalPriceWan) && Number(r.l.totalPriceWan) <= Number(maxP));
-  if (maxC) rowsF = rowsF.filter(r => { const m = isSet(r.h.driveAMinutes) ? Number(r.h.driveAMinutes) : (isSet(r.h.commuteAMinutes) ? Number(r.h.commuteAMinutes) : null); return m !== null && m <= Number(maxC); });
+  if (maxC) rowsF = rowsF.filter(r => { const c = commuteCands(r.h, "A"); const m = c.length ? Math.min(...c.map(x => x.m)) : null; return m !== null && m <= Number(maxC); });
   rows.length = 0; rows.push(...rowsF);
   const priceOf = l => isSet(l.totalPriceWan) ? Number(l.totalPriceWan) : Infinity;
   const groupMin = new Map();
@@ -1029,6 +1103,7 @@ function renderList(){
   const list = filteredHouses();
   const main = $("#list-main");
   if (viewMode === "lfav") { renderFavListings(main); updateCompareBar(); return; }
+  if (viewMode === "match") { renderMatch(main); updateCompareBar(); window.scrollTo(0, 0); return; }
   if (viewMode === "map") {
     const list = filteredHouses();
     const withC = list.filter(h => h.mapCoord);
@@ -1203,7 +1278,15 @@ function detailHTML(h){
   s += commuteLine(h.commuteALabel || "通勤A", h.commuteAKm, h.commuteAMinutes);
   s += commuteLine(h.commuteBLabel || "通勤B", h.commuteBKm, h.commuteBMinutes);
   if (s) html += `<section class="dsec"><h4>交通通勤</h4>${s}</section>`;
-  if (h.city === "天津" || isSet(h.driveAKm) || isSet(h.hsrStationName) || isSet(h.hsrRideMinutes)) {
+  if (h.city === "北京" && (isSet(h.ebikeAMinutes) || isSet(h.ebikeBMinutes) || isSet(h.transitAMinutes) || isSet(h.transitBMinutes))) {
+    s = "";
+    s += commuteLine("骑电车到通勤A", h.ebikeAKm, h.ebikeAMinutes);
+    s += commuteLine("骑电车到通勤B", h.ebikeBKm, h.ebikeBMinutes);
+    s += kv("公共交通到通勤A", isSet(h.transitAMinutes) ? "约" + h.transitAMinutes + " 分钟" : "待补充（高德key需开通公交权限）");
+    s += kv("公共交通到通勤B", isSet(h.transitBMinutes) ? "约" + h.transitBMinutes + " 分钟" : "待补充（高德key需开通公交权限）");
+    if (s) html += `<section class="dsec"><h4>北京 · 电车 / 公交通勤</h4>${s}</section>`;
+  }
+  if (h.city === "天津") {
     s = "";
     s += commuteLine("驾车到通勤A", h.driveAKm, h.driveAMinutes);
     s += commuteLine("驾车到通勤B", h.driveBKm, h.driveBMinutes);
@@ -2206,7 +2289,10 @@ const FORM_SECTIONS = [
   ["交通通勤", [
     ["subwayKm","地铁距离（km）","num"], ["busKm","公交距离（km）","num"],
     ["commuteALabel","通勤A 标签","text"], ["commuteAKm","通勤A 距离（km）","num"], ["commuteAMinutes","通勤A 时间（分钟）","num"],
-    ["commuteBLabel","通勤B 标签","text"], ["commuteBKm","通勤B 距离（km）","num"], ["commuteBMinutes","通勤B 时间（分钟）","num"]
+    ["commuteBLabel","通勤B 标签","text"], ["commuteBKm","通勤B 距离（km）","num"], ["commuteBMinutes","通勤B 时间（分钟）","num"],
+    ["ebikeAKm","电车到A 距离（km）","num"], ["ebikeAMinutes","电车到A 时间（分钟）","num"],
+    ["ebikeBKm","电车到B 距离（km）","num"], ["ebikeBMinutes","电车到B 时间（分钟）","num"],
+    ["transitAMinutes","公交到A 时间（分钟）","num"], ["transitBMinutes","公交到B 时间（分钟）","num"]
   ]],
   ["天津专用（驾车 / 高铁）", [
     ["driveAKm","驾车到A 距离（km）","num"], ["driveAMinutes","驾车到A 时间（分钟）","num"],
@@ -2387,7 +2473,7 @@ function completenessGroups(h){
   const amenKeys = ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","markets","parks"];
   return [
     { label: "基本信息", ok: isSet(h.unitPriceMin) && isSet(h.builtYear) },
-    { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.commuteAMinutes) || isSet(h.hsrStationName) },
+    { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.commuteAMinutes) || isSet(h.ebikeAMinutes) || isSet(h.transitAMinutes) || isSet(h.hsrStationName) },
     { label: "周边配套", ok: amenKeys.some(k => Array.isArray(h[k]) && h[k].length) },
     { label: "房源", ok: L.length > 0 },
     { label: "房源详情", ok: L.some(l => l.baths !== null && l.baths !== undefined) },
@@ -2622,19 +2708,29 @@ function annuity(principalWan, annualPct, years){
 }
 function runCalc(){
   const total = Number($("#c-total").value) || 0;
-  const downPct = Number($("#c-down").value) || 0.3;
+  const downSel = $("#c-down").value;
+  let downAmt;
+  if (downSel === "custom") {
+    downAmt = Number($("#c-down-amt").value) || 0;
+  } else {
+    const downPct = Number(downSel) || 0.3;
+    downAmt = Math.round(total * downPct * 10) / 10;
+    $("#c-down-amt").value = total > 0 ? downAmt : "";
+  }
+  const downPct = total > 0 ? downAmt / total : 0.3;
   const years = Number($("#c-years").value) || 30;
-  const fund = Math.min(Number($("#c-fund").value) || 0, total * (1 - downPct));
-  const loan = Math.max(total * (1 - downPct) - fund, 0);
+  const fund = Math.min(Number($("#c-fund").value) || 0, Math.max(total - downAmt, 0));
+  const loan = Math.max(total - downAmt - fund, 0);
   const rb = annuity(loan, Number($("#c-rate-biz").value) || 0, years);
   const rf = annuity(fund, Number($("#c-rate-fund").value) || 0, years);
   const monthly = rb.monthly + rf.monthly;
   const interest = (rb.interest + rf.interest) / 10000;
   $("#c-out").innerHTML = total > 0
-    ? `首付 <b>${fmtNum(Math.round(total * downPct * 10) / 10)} 万</b> · 商贷 ${fmtNum(Math.round(loan * 10) / 10)} 万${fund > 0 ? " · 公积金 " + fmtNum(fund) + " 万" : ""}<br>月供约 <b>${fmtNum(Math.round(monthly))} 元</b>（等额本息，${years} 年）<br>利息合计约 ${fmtNum(Math.round(interest * 10) / 10)} 万 · 还款总额约 ${fmtNum(Math.round((total * (1 - downPct) + interest) * 10) / 10)} 万（不含首付）`
+    ? `首付 <b>${fmtNum(downAmt)} 万</b>${downSel !== "custom" ? "（" + Math.round(downPct * 100) + "%）" : ""} · 商贷 ${fmtNum(Math.round(loan * 10) / 10)} 万${fund > 0 ? " · 公积金 " + fmtNum(fund) + " 万" : ""}<br>月供约 <b>${fmtNum(Math.round(monthly))} 元</b>（等额本息，${years} 年）<br>利息合计约 ${fmtNum(Math.round(interest * 10) / 10)} 万 · 还款总额约 ${fmtNum(Math.round((loan + fund + interest) * 10) / 10)} 万（不含首付）`
     : "填入总价后自动计算（等额本息）。利率是示例值，按银行实际改。";
 }
 ["c-total", "c-down", "c-years", "c-fund", "c-rate-biz", "c-rate-fund"].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener("input", runCalc); el.addEventListener("change", runCalc); } });
+$("#c-down-amt").addEventListener("input", () => { $("#c-down").value = "custom"; runCalc(); });
 function openCalc(totalWan){
   if (isSet(totalWan)) $("#c-total").value = totalWan;
   runCalc();
@@ -2683,23 +2779,219 @@ async function initQijuMap(list){
   if (!document.getElementById("qiju-map")) return;
   if (qijuMap) { qijuMap.remove(); qijuMap = null; }
   qijuMap = L.map("qiju-map");
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(qijuMap);
+  L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}", { subdomains: ["1", "2", "3", "4"], maxZoom: 19, attribution: "© 高德地图" }).addTo(qijuMap);
   const pts = [];
   for (const h of list) {
     const parts = String(h.mapCoord).split(",").map(Number);
     if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) continue;
-    const [wLng, wLat] = gcjToWgs(parts[0], parts[1]);
+    const wLng = parts[0], wLat = parts[1];
     pts.push([wLat, wLng]);
     const color = h.status === "viewed" ? "#2E7D32" : "#9E9E9E";
-    const aMin = isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes;
+    const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : (isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes);
+    const aMode = isSet(h.ebikeAMinutes) ? "电车A" : "通勤A";
     L.circleMarker([wLat, wLng], { radius: 8, color: h.isFavorite ? "#E60023" : "#fff", weight: h.isFavorite ? 3 : 2, fillColor: color, fillOpacity: 0.9 })
       .addTo(qijuMap)
-      .bindPopup(`<div class="map-pop"><b>${esc(h.community || "")}</b><br>${esc([h.city, h.district, h.sector].filter(Boolean).join(" · "))}<br>单价 ${listUnitStr(h) || "待录入"}${isSet(aMin) ? " · 通勤A " + aMin + "分" : ""}<br><button class="btn" onclick="window.__qijuOpen(${h.id})">看详情</button></div>`);
+      .bindPopup(`<div class="map-pop"><b>${esc(h.community || "")}</b><br>${esc([h.city, h.district, h.sector].filter(Boolean).join(" · "))}<br>单价 ${listUnitStr(h) || "待录入"}${isSet(aMin) ? " · " + aMode + " " + aMin + "分" : ""}`);
   }
   if (pts.length) qijuMap.fitBounds(pts, { padding: [30, 30] });
   else qijuMap.setView([39.95, 116.3], 10);
   setTimeout(() => { if (qijuMap) qijuMap.invalidateSize(); }, 60);
 }
+
+/* ==================== 购房需求与匹配 ==================== */
+const REQ_KEY = "qiju_requirements_v1";
+function loadReq(){ try { return JSON.parse(localStorage.getItem(REQ_KEY) || "null") || { wants: {}, blocks: {} }; } catch { return { wants: {}, blocks: {} }; } }
+let userReq = loadReq();
+function saveReq(){ try { localStorage.setItem(REQ_KEY, JSON.stringify(userReq)); } catch {} }
+function commuteCands(h, dir){
+  const out = [];
+  const push = (v, mode) => { if (isSet(v)) out.push({ m: Number(v), mode }); };
+  if (dir === "A") { push(h.driveAMinutes, "开车"); push(h.ebikeAMinutes, "电车"); push(h.transitAMinutes, "公交"); push(h.commuteAMinutes, "开车"); }
+  else { push(h.driveBMinutes, "开车"); push(h.ebikeBMinutes, "电车"); push(h.transitBMinutes, "公交"); push(h.commuteBMinutes, "开车"); }
+  return out;
+}
+function nearestDist(h, key){
+  const arr = h[key];
+  if (!Array.isArray(arr) || !arr.length) return null;
+  let best = null;
+  for (const it of arr) { if (isSet(it.distanceKm)) { const d = Number(it.distanceKm); if (!isNaN(d) && (best === null || d < best)) best = d; } }
+  return best;
+}
+function evalWants(h, l){
+  const w = userReq.wants || {};
+  const res = [];
+  const add = (label, ok) => { if (ok !== null && ok !== undefined) res.push({ label, ok: !!ok }); };
+  const priceOf = l && isSet(l.totalPriceWan) ? Number(l.totalPriceWan) : null;
+  const unitOf = l && isSet(l.unitPrice) ? Number(l.unitPrice) : null;
+  if (isSet(w.totalMax)) {
+    let ok = priceOf !== null ? priceOf <= Number(w.totalMax) : null;
+    if (ok === null && isSet(h.listTotalPriceMin)) ok = Number(h.listTotalPriceMin) <= Number(w.totalMax);
+    add(`总价≤${w.totalMax}万`, ok);
+  }
+  if (isSet(w.unitMax)) {
+    let ok = unitOf !== null ? unitOf <= Number(w.unitMax) : null;
+    if (ok === null && isSet(h.unitPriceMin)) ok = Number(h.unitPriceMin) <= Number(w.unitMax);
+    add(`单价≤${w.unitMax}元/㎡`, ok);
+  }
+  if (isSet(w.areaMin)) add(`面积≥${w.areaMin}㎡`, l && isSet(l.areaSqm) ? Number(l.areaSqm) >= Number(w.areaMin) : null);
+  if (isSet(w.commuteA)) { const c = commuteCands(h, "A"); add(`通勤A≤${w.commuteA}分`, c.length ? Math.min(...c.map(x => x.m)) <= Number(w.commuteA) : null); }
+  if (isSet(w.commuteB)) { const c = commuteCands(h, "B"); add(`通勤B≤${w.commuteB}分`, c.length ? Math.min(...c.map(x => x.m)) <= Number(w.commuteB) : null); }
+  if (isSet(w.subwayMax)) { const d = nearestDist(h, "subway"); add(`地铁≤${w.subwayMax}km`, d !== null ? d <= Number(w.subwayMax) : null); }
+  if (w.rooms && w.rooms.length) add(`户型${w.rooms.map(r => r === "4" ? "4室+" : r + "室").join("、")}`, l && isSet(l.rooms) ? (Number(l.rooms) >= 4 ? w.rooms.includes("4") : w.rooms.includes(String(l.rooms))) : null);
+  if (w.orient && w.orient.length) add(`朝向含${w.orient.join("、")}`, l && l.orientation ? w.orient.some(o => l.orientation.includes(o)) : null);
+  if (w.deco && w.deco.length) add(`装修${w.deco.join("、")}`, l && l.decoration ? w.deco.includes(l.decoration) : null);
+  if (w.floor && w.floor.length) add(`楼层${w.floor.join("、")}`, l && l.floorText ? w.floor.includes(l.floorText) : null);
+  if (w.ages && w.ages.length) add(w.ages.join("、"), l && l.houseAge ? w.ages.includes(l.houseAge) : null);
+  if (w.owns && w.owns.length) add(w.owns.join("、"), l && l.ownership ? w.owns.includes(l.ownership) : null);
+  if (w.elevator) add("有电梯", l ? (l.hasElevator === true ? true : (l.hasElevator === false ? false : null)) : null);
+  return res;
+}
+function evalBlocks(h, l){
+  const b = userReq.blocks || {};
+  const reasons = [];
+  if (l) {
+    if (b.top && l.floorText === "顶层") reasons.push("顶层");
+    if (b.noelev && l.hasElevator === false) reasons.push("无电梯");
+    if (b.mort && l.mortgage && l.mortgage !== "无抵押") reasons.push("有抵押");
+    if (b.pub && l.ownership === "已购公房") reasons.push("已购公房");
+    if (b.north && (l.orientation || "").includes("北")) reasons.push("朝北");
+    if (b.west && (l.orientation || "").includes("西")) reasons.push("朝西");
+  }
+  return reasons;
+}
+function communityMatch(h){
+  const L = getListings(h);
+  const b = userReq.blocks || {};
+  const commReasons = [];
+  if (isSet(b.year) && isSet(h.builtYear) && Number(h.builtYear) < Number(b.year)) commReasons.push(`建成早于${b.year}年`);
+  if (b.sectors && b.sectors.length && h.sector && b.sectors.includes(h.sector)) commReasons.push("排除板块");
+  if (!L.length) {
+    const ev = evalWants(h, null);
+    return { excluded: commReasons.length > 0, reasons: commReasons, listing: null, matched: ev.filter(x => x.ok), missed: ev.filter(x => !x.ok), noListing: true };
+  }
+  let best = null;
+  for (const l of L) {
+    const reasons = [...commReasons, ...evalBlocks(h, l)];
+    if (reasons.length) continue;
+    const ev = evalWants(h, l);
+    const cand = { listing: l, matched: ev.filter(x => x.ok), missed: ev.filter(x => !x.ok) };
+    const candPrice = isSet(l.totalPriceWan) ? Number(l.totalPriceWan) : Infinity;
+    const bestPrice = best && isSet(best.listing.totalPriceWan) ? Number(best.listing.totalPriceWan) : Infinity;
+    if (!best || cand.matched.length > best.matched.length || (cand.matched.length === best.matched.length && candPrice < bestPrice)) best = cand;
+  }
+  if (!best) {
+    const reasons = [...commReasons, ...evalBlocks(h, L[0])];
+    return { excluded: true, reasons: reasons.length ? reasons : ["被不想要条件排除"], listing: null, matched: [], missed: [], noListing: false };
+  }
+  return { excluded: false, reasons: [], listing: best.listing, matched: best.matched, missed: best.missed, noListing: false };
+}
+function matchScore(r){
+  const d = r.matched.length + r.missed.length;
+  return d ? r.matched.length / d : null;
+}
+function renderMatch(main){
+  const rows = houses.map(h => ({ h, ...communityMatch(h) }));
+  const kept = rows.filter(r => !r.excluded);
+  const showBlocked = $("#m-show-blocked") ? $("#m-show-blocked").checked : false;
+  kept.sort((a, b) => {
+    const sa = matchScore(a), sb = matchScore(b);
+    if (sa !== null && sb !== null && sb !== sa) return sb - sa;
+    if (sa === null && sb !== null) return 1;
+    if (sa !== null && sb === null) return -1;
+    const pa = a.listing && isSet(a.listing.totalPriceWan) ? Number(a.listing.totalPriceWan) : Infinity;
+    const pb = b.listing && isSet(b.listing.totalPriceWan) ? Number(b.listing.totalPriceWan) : Infinity;
+    return pa - pb;
+  });
+  const avg = arr => arr.length ? Math.round(arr.reduce((x, y) => x + y, 0) / arr.length) : null;
+  const med = arr => { if (!arr.length) return null; const s = arr.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+  const unitVals = kept.map(r => Number(r.h.unitPriceMin)).filter(v => !isNaN(v));
+  const totalVals = kept.map(r => { const L = getListings(r.h); const vs = L.map(l => Number(l.totalPriceWan)).filter(v => !isNaN(v)); return vs.length ? Math.min(...vs) : (isSet(r.h.listTotalPriceMin) ? Number(r.h.listTotalPriceMin) : NaN); }).filter(v => !isNaN(v));
+  const aVals = kept.map(r => { const c = commuteCands(r.h, "A"); return c.length ? Math.min(...c.map(x => x.m)) : NaN; }).filter(v => !isNaN(v));
+  const avgUnit = avg(unitVals), minTotal = totalVals.length ? Math.min(...totalVals) : null, medA = med(aVals);
+  const rowHTML = (r) => {
+    const sc = matchScore(r);
+    const l = r.listing;
+    let sub = esc([r.h.city, r.h.district, r.h.sector].filter(Boolean).join(" · "));
+    if (l) { try { const lay = listingLayoutStr(l); if (lay) sub += " · " + esc(lay); } catch {} if (isSet(l.totalPriceWan)) sub += ` · ${fmtNum(l.totalPriceWan)}万`; }
+    else if (r.noListing) sub += " · 暂无房源";
+    if (isSet(r.h.unitPriceMin)) sub += ` · 单价${listUnitStr(r.h) || ""}`;
+    const tags = [...r.matched.map(m => `<span class="mtag">✓ ${esc(m.label)}</span>`), ...r.missed.map(m => `<span class="mtag miss">✗ ${esc(m.label)}</span>`)].join("");
+    const scoreTxt = sc === null ? "未设想要条件" : `匹配 ${Math.round(sc * 100)}%`;
+    return `<div class="mrow${r.excluded ? " dim" : ""}" data-mid="${r.h.id}"><div class="mrow-head"><b>${esc(r.h.community || "")}</b><span class="mscore${sc !== null && sc < 0.5 ? " low" : ""}">${scoreTxt}</span></div><div class="mrow-sub">${sub || "&nbsp;"}</div>${r.excluded ? `<div class="mrow-tags"><span class="mtag block">排除原因：${r.reasons.map(esc).join("、")}</span></div>` : (tags ? `<div class="mrow-tags">${tags}</div>` : "")}</div>`;
+  };
+  let html = `<div class="mstats">
+    <div class="mstat"><b>${kept.length}</b>候选小区（共 ${houses.length} 个）</div>
+    <div class="mstat"><b>${avgUnit !== null ? fmtNum(avgUnit) + " 元/㎡" : "—"}</b>候选平均单价</div>
+    <div class="mstat"><b>${minTotal !== null ? minTotal + " 万" : "—"}</b>候选最低总价</div>
+    <div class="mstat"><b>${medA !== null ? medA + " 分" : "—"}</b>候选通勤A中位</div>
+  </div>`;
+  html += `<label style="display:flex;align-items:center;gap:6px;font-size:13.5px;margin-bottom:12px"><input type="checkbox" id="m-show-blocked" style="width:auto">显示被排除的小区（${rows.length - kept.length} 个）</label>`;
+  if (!kept.length) html += `<div class="imp-line">没有符合条件的小区，放宽需求再试。</div>`;
+  html += kept.map(rowHTML).join("");
+  if (showBlocked) html += rows.filter(r => r.excluded).map(rowHTML).join("");
+  main.innerHTML = html;
+  const cb = $("#m-show-blocked");
+  if (cb) { cb.checked = showBlocked; cb.addEventListener("change", () => renderList()); }
+}
+document.addEventListener("click", (e) => {
+  const r = e.target.closest("[data-mid]");
+  if (r) openDetail(Number(r.dataset.mid));
+});
+function closeReq(){
+  $("#req-wrap").classList.add("hidden");
+  if ($("#drawer").classList.contains("open") || !$("#ldetail-wrap").classList.contains("hidden")) return;
+  document.body.classList.remove("locked");
+}
+document.querySelectorAll("[data-close-req]").forEach(el => el.addEventListener("click", closeReq));
+function checkedVals(id){ return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value); }
+function collectReq(){
+  const num = id => { const v = $(`#${id}`).value; return v === "" || v === null ? undefined : Number(v); };
+  const wants = {};
+  const t = num("r-total-max"); if (t !== undefined) wants.totalMax = t;
+  const u = num("r-unit-max"); if (u !== undefined) wants.unitMax = u;
+  const ar = num("r-area-min"); if (ar !== undefined) wants.areaMin = ar;
+  const ca = num("r-commute-a"); if (ca !== undefined) wants.commuteA = ca;
+  const cb = num("r-commute-b"); if (cb !== undefined) wants.commuteB = cb;
+  const sm = num("r-subway-max"); if (sm !== undefined) wants.subwayMax = sm;
+  const rooms = checkedVals("r-rooms"); if (rooms.length) wants.rooms = rooms;
+  const orient = checkedVals("r-orient"); if (orient.length) wants.orient = orient;
+  const deco = checkedVals("r-deco"); if (deco.length) wants.deco = deco;
+  const floor = checkedVals("r-floor"); if (floor.length) wants.floor = floor;
+  const ao = checkedVals("r-ageown");
+  const ages = ao.filter(v => v.startsWith("age:")).map(v => v.slice(4));
+  const owns = ao.filter(v => v.startsWith("own:")).map(v => v.slice(4));
+  if (ages.length) wants.ages = ages;
+  if (owns.length) wants.owns = owns;
+  if (ao.includes("elevator")) wants.elevator = true;
+  const blocks = {};
+  const bl = checkedVals("r-blocks");
+  if (bl.includes("top")) blocks.top = true;
+  if (bl.includes("noelev")) blocks.noelev = true;
+  if (bl.includes("mort")) blocks.mort = true;
+  if (bl.includes("pub")) blocks.pub = true;
+  if (bl.includes("north")) blocks.north = true;
+  if (bl.includes("west")) blocks.west = true;
+  const by = num("r-block-year"); if (by !== undefined) blocks.year = by;
+  const secs = $("#r-block-sectors").value.split(/[,，、]/).map(x => x.trim()).filter(Boolean);
+  if (secs.length) blocks.sectors = secs;
+  return { wants, blocks };
+}
+function fillReqForm(){
+  const w = userReq.wants || {}, b = userReq.blocks || {};
+  const setNum = (id, v) => { $(`#${id}`).value = v !== undefined ? v : ""; };
+  setNum("r-total-max", w.totalMax); setNum("r-unit-max", w.unitMax); setNum("r-area-min", w.areaMin);
+  setNum("r-commute-a", w.commuteA); setNum("r-commute-b", w.commuteB); setNum("r-subway-max", w.subwayMax);
+  const setChecks = (id, vals) => { document.querySelectorAll(`#${id} input`).forEach(el => el.checked = vals.includes(el.value)); };
+  setChecks("r-rooms", w.rooms || []); setChecks("r-orient", w.orient || []); setChecks("r-deco", w.deco || []);
+  setChecks("r-floor", w.floor || []);
+  setChecks("r-ageown", [...(w.ages || []).map(a => "age:" + a), ...(w.owns || []).map(o => "own:" + o), ...(w.elevator ? ["elevator"] : [])]);
+  setChecks("r-blocks", [...(b.top ? ["top"] : []), ...(b.noelev ? ["noelev"] : []), ...(b.mort ? ["mort"] : []), ...(b.pub ? ["pub"] : []), ...(b.north ? ["north"] : []), ...(b.west ? ["west"] : [])]);
+  setNum("r-block-year", b.year);
+  $("#r-block-sectors").value = (b.sectors || []).join(",");
+}
+$("#btn-req").addEventListener("click", () => { fillReqForm(); $("#req-wrap").classList.remove("hidden"); document.body.classList.add("locked"); });
+$("#btn-req-save").addEventListener("click", () => { userReq = collectReq(); saveReq(); closeReq(); toast("需求已保存"); if (viewMode !== "match") setTab("match"); else renderList(); });
+$("#btn-req-clear").addEventListener("click", () => { userReq = { wants: {}, blocks: {} }; saveReq(); fillReqForm(); toast("需求已清空"); });
 
 /* ==================== 全局按键 / 启动 ==================== */
 document.addEventListener("keydown", e => {
