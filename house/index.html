@@ -411,8 +411,10 @@
     .brand{font-size:17px}
     .search-box{order:3; flex-basis:100%; max-width:none; margin:0}
     .search-box input{height:44px}
-    .tb-actions{margin-left:auto}
-    .tb-actions .btn{padding:8px 13px; font-size:13px}
+    .tb-actions{margin-left:auto; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+    .tb-actions::-webkit-scrollbar{display:none}
+    .tb-actions .btn{padding:8px 13px; font-size:13px; flex:none}
+    .tb-actions .avatar-btn{flex:none}
     .page{padding:20px 14px 120px}
     .title-row h1{font-size:25px}
     .group{margin-top:26px}
