@@ -2474,7 +2474,8 @@ function diffRecord(ex, mg){
   return out;
 }
 let pendingImport = null;
-function closeImportPreview(){ $("#import-wrap").classList.add("hidden"); document.body.classList.remove("locked"); pendingImport = null; }
+let importApplying = false;
+function closeImportPreview(){ $("#import-wrap").classList.add("hidden"); document.body.classList.remove("locked"); pendingImport = null; const ab = $("#btn-apply-import"); if (ab) { ab.disabled = false; ab.textContent = "确认导入"; } document.querySelectorAll("[data-close-import]").forEach(b => b.disabled = false); }
 document.querySelectorAll("[data-close-import]").forEach(el => el.addEventListener("click", closeImportPreview));
 $("#import-file").addEventListener("change", async (e) => {
   const file = e.target.files[0]; e.target.value = "";
@@ -2483,8 +2484,12 @@ $("#import-file").addEventListener("change", async (e) => {
   try { arr = JSON.parse(await file.text()); }
   catch { toast("文件不是合法 JSON"); return; }
   if (!Array.isArray(arr) || !arr.length || arr.some(r => !r || !isSet(r.id))) { toast("JSON 格式不对：应为带 id 的记录数组"); return; }
+  $("#import-preview-body").innerHTML = `<div class="imp-line">正在读取现有数据并比对，请稍候…</div>`;
+  $("#import-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+  $("#btn-apply-import").disabled = true;
   const { data: existing, error } = await sb.from("houses").select("app_id, data");
-  if (error) { toast("导入前查询失败：" + error.message); return; }
+  if (error) { toast("导入前查询失败：" + error.message); closeImportPreview(); return; }
   const existingMap = new Map((existing || []).map(r => [Number(r.app_id), r.data]));
   const toInsert = [], toUpdate = [];
   const lines = [];
@@ -2507,14 +2512,20 @@ $("#import-file").addEventListener("change", async (e) => {
     if (d.favChanges) lines.push(`<div class="imp-line">${esc(r.community || "")}：关注标记变化 ${d.favChanges} 处</div>`);
   }
   pendingImport = { toInsert, toUpdate };
+  $("#btn-apply-import").disabled = false;
   const sum = `<div class="imp-sum">新增小区 <b>${toInsert.length}</b> 条 · 有变化的小区 <b>${changedRecs}</b> 条<br>房源：新增 <b>${totNewL}</b> 套 · 改价 <b>${totPrice}</b> 套 · 状态变化 <b>${totStatus}</b> 套 · 关注变化 <b>${totFav}</b> 处 · 其他字段补全约 <b>${totFill}</b> 项</div>`;
   $("#import-preview-body").innerHTML = sum + (lines.length ? `<div style="margin-top:10px">${lines.join("")}</div>` : `<div class="imp-line">与现有数据无差异。</div>`);
   $("#import-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 });
 $("#btn-apply-import").addEventListener("click", async () => {
-  if (!pendingImport) return;
+  if (!pendingImport || importApplying) return;
+  importApplying = true;
   const { toInsert, toUpdate } = pendingImport;
+  const applyBtn = $("#btn-apply-import");
+  applyBtn.disabled = true; applyBtn.textContent = "导入中…";
+  document.querySelectorAll("[data-close-import]").forEach(b => b.disabled = true);
+  $("#import-preview-body").innerHTML = `<div class="imp-line">正在写入数据库，请稍候…（共 ${toInsert.length + toUpdate.length} 条记录）</div>`;
   try {
     const before = {};
     for (const u of toUpdate) before[u.merged.id] = u.before;
@@ -2530,7 +2541,12 @@ $("#btn-apply-import").addEventListener("click", async () => {
     closeImportPreview();
     refreshUndoBtn();
     loadHouses();
-  } catch (err) { toast("导入失败：" + err.message); }
+  } catch (err) {
+    toast("导入失败：" + err.message);
+    $("#import-preview-body").innerHTML = `<div class="imp-line">导入失败：${esc(err.message)}，可再次点击「确认导入」重试。</div>`;
+    applyBtn.disabled = false; applyBtn.textContent = "确认导入";
+    document.querySelectorAll("[data-close-import]").forEach(b => b.disabled = false);
+  } finally { importApplying = false; }
 });
 $("#btn-undo-import").addEventListener("click", async () => {
   let snap = null;
@@ -2538,6 +2554,7 @@ $("#btn-undo-import").addEventListener("click", async () => {
   if (!snap || !snap.before) { toast("没有可撤销的导入"); return; }
   const when = new Date(snap.ts).toLocaleString("zh-CN");
   if (!confirm(`撤销 ${when} 的那次导入？被改动的记录会恢复到导入前，新增的记录会被删除。此操作只针对最近一次导入。`)) return;
+  const ub = $("#btn-undo-import"); ub.disabled = true; ub.textContent = "撤销中…";
   try {
     for (const [id, before] of Object.entries(snap.before)) {
       if (before === null) await dbDelete(Number(id));
@@ -2548,6 +2565,7 @@ $("#btn-undo-import").addEventListener("click", async () => {
     refreshUndoBtn();
     loadHouses();
   } catch (err) { toast("撤销失败：" + err.message); }
+  finally { ub.disabled = false; ub.textContent = "撤销导入"; }
 });
 $("#btn-export").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(houses, null, 1)], { type: "application/json" });
@@ -2676,7 +2694,7 @@ async function initQijuMap(list){
     const aMin = isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes;
     L.circleMarker([wLat, wLng], { radius: 8, color: h.isFavorite ? "#E60023" : "#fff", weight: h.isFavorite ? 3 : 2, fillColor: color, fillOpacity: 0.9 })
       .addTo(qijuMap)
-      .bindPopup(`<div class="map-pop"><b>${esc(h.community || "")}</b><br>${esc([h.city, h.district, h.sector].filter(Boolean).join(" · "))}<br>单价 ${unitPriceStr(h)}${isSet(aMin) ? " · 通勤A " + aMin + "分" : ""}<br><button class="btn" onclick="window.__qijuOpen(${h.id})">看详情</button></div>`);
+      .bindPopup(`<div class="map-pop"><b>${esc(h.community || "")}</b><br>${esc([h.city, h.district, h.sector].filter(Boolean).join(" · "))}<br>单价 ${listUnitStr(h) || "待录入"}${isSet(aMin) ? " · 通勤A " + aMin + "分" : ""}<br><button class="btn" onclick="window.__qijuOpen(${h.id})">看详情</button></div>`);
   }
   if (pts.length) qijuMap.fitBounds(pts, { padding: [30, 30] });
   else qijuMap.setView([39.95, 116.3], 10);
