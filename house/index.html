@@ -72,7 +72,6 @@
   .avatar-menu button{display:block; width:100%; text-align:left; padding:10px 14px; border-radius:10px; font-size:14.5px; color:var(--ink); background:transparent; cursor:pointer}
   .avatar-menu button:hover{background:var(--soft)}
   .avatar-menu .am-sep{height:1px; background:#f1f1f1; margin:6px 8px}
-  .avatar-dot{position:absolute; top:1px; right:1px; width:10px; height:10px; border-radius:50%; background:#E60023; border:2px solid #fff; z-index:2}
   @media (min-width:768px){
     .tb-inner{flex-wrap:wrap; gap:12px 18px}
     .brand{order:1}
@@ -491,7 +490,7 @@
       <div class="tb-corner">
         <button class="btn" id="btn-import">导入</button>
         <button class="btn primary" id="btn-add-top">+ 新增</button>
-        <button class="avatar-btn" id="btn-profile" title="菜单"><span id="user-avatar">·</span><span class="avatar-dot hidden" id="avatar-dot"></span></button>
+        <button class="avatar-btn" id="btn-profile" title="菜单"><span id="user-avatar">·</span></button>
         <div class="avatar-menu hidden" id="avatar-menu">
           <button type="button" data-menu="export">导出</button>
           <button type="button" data-menu="calc">测算</button>
@@ -721,6 +720,7 @@
       <div class="req-sec"><h4>4 · 周边配套（距离上限，公里）</h4>
         <div class="req-grid">
           <label>地铁<input type="number" id="a-subway-max" min="0" step="0.1"></label>
+          <label>公交<input type="number" id="a-bus-max" min="0" step="0.1"></label>
           <label>医院<input type="number" id="a-hosp-max" min="0" step="0.1"></label>
           <label>公园<input type="number" id="a-park-max" min="0" step="0.1"></label>
           <label>商场<input type="number" id="a-mall-max" min="0" step="0.1"></label>
@@ -1143,7 +1143,7 @@ function searchHay(h){
     if (isSet(l.totalPriceWan)) parts.push(l.totalPriceWan + "万");
     if (isSet(l.unitPrice)) parts.push(String(l.unitPrice));
   }
-  for (const k of ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"]) {
+  for (const k of ["subway","bus","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"]) {
     const arr = h[k];
     if (Array.isArray(arr)) for (const it of arr) if (it && it.name) parts.push(it.name);
   }
@@ -1349,7 +1349,7 @@ function kv(k, v, linkifyIt){
   return `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${linkifyIt ? linkify(v) : esc(v)}</div></div>`;
 }
 /* 周边配套：细分类逐块展示（地铁/幼儿园/小学/中学/大学/医院/商场/超市/公园/休闲），每块按距离升序、默认 3 项、超出可展开 */
-const AMEN_CATS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
+const AMEN_CATS = [["subway","地铁"],["bus","公交"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
 let amenOpenCats = new Set();
 function amenDist(d){
   if (!isSet(d)) return "";
@@ -2469,7 +2469,7 @@ const FORM_SECTIONS = [
     ["hasGarbageStation","附近垃圾站","tri"], ["nearElevated","附近高架","tri"], ["noiseLevel","噪音","text"]
   ]]
 ];
-const AMEN_FIELDS = [["subway","地铁"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
+const AMEN_FIELDS = [["subway","地铁"],["bus","公交"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
 
 function triSel(val){ return (val===1||val===true) ? "1" : ((val===0||val===false) ? "0" : ""); }
 function fieldInput(key, label, type, val, ph, hint){
@@ -2508,7 +2508,7 @@ function amenRow(a){
 }
 function openEdit(id){
   editingId = id;
-  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], malls:[], supermarkets:[], parks:[], leisure:[] };
+  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], bus:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], malls:[], supermarkets:[], parks:[], leisure:[] };
   if (!h) return;
   $("#edit-title").textContent = id ? "编辑 · " + (h.community||"") : "新增一套";
   let html = "";
@@ -2630,7 +2630,7 @@ function isEmptyVal(v){ return v === null || v === undefined || v === "" || (Arr
 /* ==================== 数据完整度 ==================== */
 function completenessGroups(h){
   const L = getListings(h);
-  const amenKeys = ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"];
+  const amenKeys = ["subway","bus","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"];
   return [
     { label: "基本信息", ok: isSet(h.unitPriceMin) && isSet(h.builtYear) },
     { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.commuteAMinutes) || isSet(h.ebikeAMinutes) || isSet(h.transitAMinutes) || isSet(h.hsrStationName) },
@@ -2696,7 +2696,6 @@ function refreshUndoBtn(){
   let has = false;
   try { has = !!localStorage.getItem(UNDO_KEY); } catch {}
   const mu = $("#menu-undo"); if (mu) mu.style.display = has ? "" : "none";
-  const dot = $("#avatar-dot"); if (dot) dot.classList.toggle("hidden", !has);
 }
 function diffRecord(ex, mg){
   const out = { fields: 0, newListings: [], priceChanges: [], statusChanges: 0, favChanges: 0, listingFieldFills: 0, changed: false };
@@ -3210,6 +3209,7 @@ function advMatch(h, a){
     return d !== null && d <= cap;
   };
   if (!distOk("subway", a.subwayMax)) return false;
+  if (!distOk("bus", a.busMax)) return false;
   if (!distOk("hospitals", a.hospMax)) return false;
   if (!distOk("parks", a.parkMax)) return false;
   if (!distOk("malls", a.mallMax)) return false;
@@ -3285,6 +3285,7 @@ function collectAdv(){
   const hts = num("a-hsr-to-station"); if (hts !== undefined) a.hsrToStation = hts;
   const hr = num("a-hsr-ride"); if (hr !== undefined) a.hsrRide = hr;
   const sm = num("a-subway-max"); if (sm !== undefined) a.subwayMax = sm;
+  const bm = num("a-bus-max"); if (bm !== undefined) a.busMax = bm;
   const hm = num("a-hosp-max"); if (hm !== undefined) a.hospMax = hm;
   const pm = num("a-park-max"); if (pm !== undefined) a.parkMax = pm;
   const mm = num("a-mall-max"); if (mm !== undefined) a.mallMax = mm;
