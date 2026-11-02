@@ -477,7 +477,7 @@
   <header class="topbar">
     <div class="tb-inner">
       <div class="brand"><span class="logo-mark" style="display:inline-flex;flex:none"><svg width="30" height="30" viewBox="0 0 64 64" role="img" aria-label="栖居 logo"><defs><linearGradient id="lgrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b2b2b"/><stop offset="1" stop-color="#050505"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#lgrad2)"/><path d="M17 32.5 L32 19.5 L47 32.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22.5 29.5 V43.5 a2.5 2.5 0 0 0 2.5 2.5 h14 a2.5 2.5 0 0 0 2.5-2.5 V29.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round"/><rect x="29" y="36.5" width="6" height="9.5" rx="3" fill="#E60023"/></svg></span>栖居</div>
-      <div class="search-box"><span class="ic">⌕</span><input id="search" type="search" placeholder="搜小区名 / 区 / 板块 / 备注"></div>
+      <div class="search-box"><span class="ic">⌕</span><input id="search" type="search" placeholder="搜小区名 / 户型 / 朝向 / 地铁站 / 备注…"></div>
       <div class="tb-actions">
         <button class="btn" id="btn-import">导入</button>
         <button class="btn" id="btn-export">导出</button>
@@ -778,7 +778,7 @@
           <label>排除板块（逗号分隔）<input type="text" id="r-block-sectors" placeholder="如 回龙观,古城"></label>
         </div>
       </div>
-      <p style="font-size:12.5px;color:var(--muted)">需求只存在这台设备/浏览器里（换设备要重填）。保存后点「匹配」页签看评分排序。</p>
+      <p style="font-size:12.5px;color:var(--muted)">需求存在你的账号里，换设备登录也能看到（本机也留一份缓存）。保存后点「匹配」页签看评分排序。</p>
     </div>
     <div class="modal-foot"><button class="btn" id="btn-req-clear">清空</button><button class="btn" data-close-req>取消</button><button class="btn primary" id="btn-req-save">保存并看匹配</button></div>
   </div>
@@ -947,6 +947,7 @@ function enterApp(){
     $("#btn-profile").title = userEmail + " · 个人信息";
   }
   refreshTopbarAvatar();
+  syncReqFromCloud();
   loadHouses();
 }
 $("#login-form").addEventListener("submit", async (e) => {
@@ -1095,6 +1096,21 @@ function renderStats(){
 }
 
 /* ==================== 列表渲染（瀑布流 Pin 卡） ==================== */
+function searchHay(h){
+  const parts = [h.community || "", h.notes || "", h.city || "", h.district || "", h.sector || ""];
+  for (const l of getListings(h)) {
+    try { const lay = listingLayoutStr(l); if (lay) parts.push(lay); } catch {}
+    parts.push(l.orientation || "", l.decoration || "", l.floorText || "", l.houseType || "", l.ownership || "", l.houseAge || "", l.mortgage || "", l.note || "");
+    if (isSet(l.areaSqm)) parts.push(l.areaSqm + "㎡");
+    if (isSet(l.totalPriceWan)) parts.push(l.totalPriceWan + "万");
+    if (isSet(l.unitPrice)) parts.push(String(l.unitPrice));
+  }
+  for (const k of ["subway","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","markets","parks","schools"]) {
+    const arr = h[k];
+    if (Array.isArray(arr)) for (const it of arr) if (it && it.name) parts.push(it.name);
+  }
+  return parts.join(" ");
+}
 function filteredHouses(){
   let list = houses.slice();
   if (curTab === "viewed") list = list.filter(h=>h.status==="viewed");
@@ -1104,7 +1120,7 @@ function filteredHouses(){
   if (f.city) list = list.filter(h=>h.city===f.city);
   if (f.district) list = list.filter(h=>h.district===f.district);
   if (f.sector) list = list.filter(h=>h.sector===f.sector);
-  if (f.q) list = list.filter(h => (h.community||"").includes(f.q) || (h.notes||"").includes(f.q) || (h.district||"").includes(f.q) || (h.sector||"").includes(f.q));
+  if (f.q) list = list.filter(h => searchHay(h).includes(f.q));
   if (advAny()) list = list.filter(h => advMatch(h));
   return list;
 }
@@ -1930,6 +1946,7 @@ $("#drawer-scroll").addEventListener("click", e => {
 
 /* ==================== 实拍媒体（图片 / 视频 · Supabase Storage） ==================== */
 const MEDIA_BUCKET = "media";
+const AVATAR_BUCKET = "avatars";
 const MEDIA_MAX_VIDEO = 50 * 1024 * 1024;
 const signedUrlCache = new Map();
 let mediaCtx = null;
@@ -2910,7 +2927,33 @@ async function initQijuMap(list){
 const REQ_KEY = "qiju_requirements_v1";
 function loadReq(){ try { return JSON.parse(localStorage.getItem(REQ_KEY) || "null") || { wants: {}, blocks: {} }; } catch { return { wants: {}, blocks: {} }; } }
 let userReq = loadReq();
-function saveReq(){ try { localStorage.setItem(REQ_KEY, JSON.stringify(userReq)); } catch {} }
+async function saveReq(){
+  try { localStorage.setItem(REQ_KEY, JSON.stringify(userReq)); } catch {}
+  try {
+    if (!sb) return false;
+    const { error } = await sb.auth.updateUser({ data: { requirements: userReq } });
+    if (error) throw error;
+    return true;
+  } catch { return false; }
+}
+async function syncReqFromCloud(){
+  try {
+    if (!sb) return;
+    const { data } = await sb.auth.getUser();
+    const cloud = data.user?.user_metadata?.requirements;
+    if (cloud && typeof cloud === "object") {
+      userReq = { wants: cloud.wants || {}, blocks: cloud.blocks || {} };
+      try { localStorage.setItem(REQ_KEY, JSON.stringify(userReq)); } catch {}
+    } else {
+      const local = loadReq();
+      if (Object.keys(local.wants || {}).length || Object.keys(local.blocks || {}).length) {
+        userReq = local;
+        try { await sb.auth.updateUser({ data: { requirements: userReq } }); } catch {}
+      }
+    }
+    if (viewMode === "match") renderList();
+  } catch {}
+}
 function commuteCands(h, dir){
   const out = [];
   const push = (v, mode) => { if (isSet(v)) out.push({ m: Number(v), mode }); };
@@ -3098,8 +3141,8 @@ function fillReqForm(){
   $("#r-block-sectors").value = (b.sectors || []).join(",");
 }
 $("#btn-req").addEventListener("click", () => { fillReqForm(); $("#req-wrap").classList.remove("hidden"); document.body.classList.add("locked"); });
-$("#btn-req-save").addEventListener("click", () => { userReq = collectReq(); saveReq(); closeReq(); toast("需求已保存"); if (viewMode !== "match") setTab("match"); else renderList(); });
-$("#btn-req-clear").addEventListener("click", () => { userReq = { wants: {}, blocks: {} }; saveReq(); fillReqForm(); toast("需求已清空"); });
+$("#btn-req-save").addEventListener("click", async () => { userReq = collectReq(); const ok = await saveReq(); closeReq(); toast(ok ? "需求已保存（已同步到云端）" : "需求已存在本机，云端同步失败，联网后重新保存一次"); if (viewMode !== "match") setTab("match"); else renderList(); });
+$("#btn-req-clear").addEventListener("click", async () => { userReq = { wants: {}, blocks: {} }; const ok = await saveReq(); fillReqForm(); toast(ok ? "需求已清空（云端同步）" : "本地已清空，云端同步失败"); });
 
 /* ==================== 高级筛选 ==================== */
 let adv = {};
@@ -3261,18 +3304,23 @@ function profilePwCheck(cur, nw, cf){
   if (nw !== cf) return "两次新密码不一致";
   return null;
 }
+function avatarPublicUrl(path){ return `${SUPABASE_URL}/storage/v1/object/public/${AVATAR_BUCKET}/${path}`; }
+async function avatarDisplayUrl(meta){
+  if (meta.avatar_bucket === "avatars" && meta.avatar_path) return avatarPublicUrl(meta.avatar_path);
+  if (meta.avatar_path) {
+    try { const { data } = await sb.storage.from(MEDIA_BUCKET).createSignedUrl(meta.avatar_path, 3600); return data?.signedUrl || ""; } catch { return ""; }
+  }
+  return "";
+}
 async function refreshTopbarAvatar(){
   try {
     if (!sb) return;
     const { data } = await sb.auth.getUser();
     const meta = data.user?.user_metadata || {};
-    const path = meta.avatar_path;
     const el = $("#user-avatar");
     if (!el) return;
-    if (path) {
-      const { data: sdata } = await sb.storage.from(MEDIA_BUCKET).createSignedUrl(path, 3600);
-      if (sdata?.signedUrl) { el.innerHTML = `<img src="${esc(sdata.signedUrl)}" alt="">`; return; }
-    }
+    const url = await avatarDisplayUrl(meta);
+    if (url) { el.innerHTML = `<img src="${esc(url)}" alt="">`; return; }
     el.textContent = (userEmail || data.user?.email || "").trim().charAt(0).toUpperCase() || "·";
   } catch {}
 }
@@ -3336,10 +3384,7 @@ async function renderProfile(main){
   if (!user) { main.innerHTML = `<div class="imp-line">没取到登录信息，请重新登录。</div>`; return; }
   const meta = user.user_metadata || {};
   const displayName = meta.display_name || "";
-  let avatarUrl = "";
-  if (meta.avatar_path) {
-    try { const { data: sdata } = await sb.storage.from(MEDIA_BUCKET).createSignedUrl(meta.avatar_path, 3600); avatarUrl = sdata?.signedUrl || ""; } catch {}
-  }
+  const avatarUrl = await avatarDisplayUrl(meta);
   const avatarBox = avatarUrl ? `<img src="${esc(avatarUrl)}" alt="">` : `<span class="pf-letter">${esc((displayName || user.email || "").trim().charAt(0).toUpperCase() || "·")}</span>`;
   let pendingAvatarBlob = null;
   main.innerHTML = `<div style="max-width:560px">
@@ -3349,7 +3394,7 @@ async function renderProfile(main){
         <div>
           <input type="file" id="pf-avatar-file" accept="image/*" style="margin-bottom:10px">
           <div><button class="btn primary" id="btn-pf-avatar-save">保存头像</button></div>
-          <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">存在房源照片同一个私密存储桶里（avatars/你的账号/），换设备登录也能看到。上传时会自动裁成正方形，并去掉图片自带的黑边。</p>
+          <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">存在公开头像桶（avatars）里，有链接就能看（只是头像，不含房源数据）；房源照片仍在私密桶里。上传时会自动裁成正方形，并去掉图片自带的黑边。</p>
         </div>
       </div>
     </div>
@@ -3380,10 +3425,10 @@ async function renderProfile(main){
     if (!pendingAvatarBlob) { toast("请先选一张图片"); return; }
     btn.disabled = true; btn.textContent = "上传中…";
     try {
-      const path = `avatars/${user.id}/avatar.jpg`;
-      const { error: upErr } = await sb.storage.from(MEDIA_BUCKET).upload(path, pendingAvatarBlob, { upsert: true, contentType: "image/jpeg" });
+      const path = `${user.id}/avatar.jpg`;
+      const { error: upErr } = await sb.storage.from(AVATAR_BUCKET).upload(path, pendingAvatarBlob, { upsert: true, contentType: "image/jpeg" });
       if (upErr) throw upErr;
-      const { error: metaErr } = await sb.auth.updateUser({ data: { avatar_path: path } });
+      const { error: metaErr } = await sb.auth.updateUser({ data: { avatar_path: path, avatar_bucket: "avatars" } });
       if (metaErr) throw metaErr;
       toast("头像已保存");
       pendingAvatarBlob = null;
