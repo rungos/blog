@@ -68,6 +68,15 @@
   .search-box input:focus{background:#fff; border-color:transparent; box-shadow:0 0 0 2px rgba(17,17,17,.65)}
   .search-box .ic{position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:30px; pointer-events:none}
   .tb-actions{display:flex; align-items:center; gap:10px; flex:none}
+  .tb-corner{display:flex; align-items:center; gap:10px; flex:none}
+  @media (min-width:768px){
+    .tb-inner{flex-wrap:wrap; gap:12px 18px}
+    .brand{order:1}
+    .search-box{order:2}
+    .tb-corner{order:3}
+    .tb-actions{order:4; flex-basis:100%; margin-left:0; max-width:100%; overflow-x:auto; scrollbar-width:none}
+    .tb-actions::-webkit-scrollbar{display:none}
+  }
   .avatar-btn{width:40px; height:40px; border-radius:50%; background:#111; color:#fff; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:background .15s ease}
   .avatar-btn:hover{background:#333}
 
@@ -409,9 +418,11 @@
   @media (max-width:767px){
     .tb-inner{flex-wrap:wrap; padding:10px 14px; gap:10px 12px}
     .brand{font-size:17px; order:1}
-    .search-box{order:2; flex-basis:100%; max-width:none; margin:0}
+    .tb-corner{order:2; margin-left:auto}
+    .tb-corner .btn{padding:8px 13px; font-size:13px}
+    .search-box{order:3; flex-basis:100%; max-width:none; margin:0}
     .search-box input{height:44px}
-    .tb-actions{order:3; flex-basis:100%; margin-left:0; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+    .tb-actions{order:4; flex-basis:100%; margin-left:0; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
     .tb-actions::-webkit-scrollbar{display:none}
     .tb-actions .btn{padding:8px 13px; font-size:13px; flex:none}
     .tb-actions .avatar-btn{flex:none}
@@ -485,6 +496,8 @@
         <button class="btn" id="btn-req">购房需求</button>
         <button class="btn" id="btn-adv">高级筛选</button>
         <button class="btn" id="btn-undo-import" style="display:none">撤销导入</button>
+      </div>
+      <div class="tb-corner">
         <button class="btn primary" id="btn-add-top">+ 新增</button>
         <button class="avatar-btn" id="btn-profile" title="个人信息"><span id="user-avatar">·</span></button>
       </div>
