@@ -2688,6 +2688,7 @@ function ocrSectionHTML(target){
     <div class="fgrid">
     <div class="fld"><label>或者选一张图</label><input type="file" id="${pre}-ocr-file" accept="image/*"></div>
     <div class="fld"><label>识别后核对再填入</label><div id="${pre}-ocr-status" style="font-size:13px;color:var(--muted)">${hint}</div></div></div>
+    <button type="button" class="btn small hidden" id="${pre}-ocr-cancel">取消识别</button>
     ${lastOcrParsed ? `<button type="button" class="btn small" id="${pre}-ocr-reuse">用上次识别结果填入</button>` : ""}</section>`;
 }
 function wireOcrSection(target){
@@ -2700,6 +2701,8 @@ function wireOcrSection(target){
   });
   const reEl = document.getElementById(pre + "-ocr-reuse");
   if (reEl) reEl.addEventListener("click", () => openOcrPreview(lastOcrParsed, target));
+  const cancelEl = document.getElementById(pre + "-ocr-cancel");
+  if (cancelEl) cancelEl.addEventListener("click", () => { cancelOcr(); });
 }
 function loadOcrLib(){
   if (window.Tesseract) return Promise.resolve();
@@ -2828,19 +2831,56 @@ function parseOcrAmenities(text){
   }
   return out;
 }
+let ocrWorker = null, ocrStatusFn = null, ocrCancelled = false, ocrRunId = 0, ocrStallTimer = null, ocrCancelBtn = null;
+function ocrPhaseLabel(m){
+  const pct = m.progress !== undefined && m.progress !== null ? Math.round(m.progress * 100) : null;
+  switch (m.status) {
+    case "loading tesseract core": return "正在下载识别核心…" + (pct !== null ? " " + pct + "%" : "");
+    case "initializing tesseract": return "正在初始化识别器…";
+    case "loading language traineddata": return "正在下载中文字库…" + (pct !== null ? " " + pct + "%" : "");
+    case "initializing api": return "正在初始化识别器…";
+    case "recognizing text": return "正在识别…" + (pct !== null ? " " + pct + "%" : "");
+    default: return pct !== null ? "正在准备… " + pct + "%" : "正在准备…";
+  }
+}
+function ocrArmStall(){
+  if (ocrStallTimer) clearTimeout(ocrStallTimer);
+  ocrStallTimer = setTimeout(() => { if (ocrStatusFn) ocrStatusFn("网络好像卡住了（90 秒没进度），可以点取消后换个网络再试"); }, 90000);
+}
+function cancelOcr(){
+  ocrCancelled = true;
+  ocrRunId++;
+  if (ocrStallTimer) { clearTimeout(ocrStallTimer); ocrStallTimer = null; }
+  if (ocrWorker) { const w = ocrWorker; ocrWorker = null; w.terminate().catch(() => {}); }
+  if (ocrStatusFn) ocrStatusFn("已取消");
+  if (ocrCancelBtn) ocrCancelBtn.classList.add("hidden");
+  ocrCancelBtn = null;
+}
 async function runOcr(file, target, statusEl){
-  const setStatus = t => { if (statusEl) statusEl.textContent = t; };
+  const myRun = ++ocrRunId;
+  ocrCancelled = false;
+  const pre = target === "community" ? "ef" : "lf";
+  ocrCancelBtn = document.getElementById(pre + "-ocr-cancel");
+  const setStatus = t => { if (statusEl && myRun === ocrRunId) statusEl.textContent = t; };
+  ocrStatusFn = setStatus;
+  if (ocrCancelBtn) ocrCancelBtn.classList.remove("hidden");
   try {
     setStatus("正在加载识别库…");
     await loadOcrLib();
-    setStatus("正在识别… 0%");
+    if (ocrCancelled || myRun !== ocrRunId) return;
+    setStatus("正在准备识别器…");
+    ocrArmStall();
+    if (!ocrWorker) {
+      ocrWorker = await Tesseract.createWorker(["chi_sim"], {
+        logger: m => { ocrArmStall(); if (ocrStatusFn) ocrStatusFn(ocrPhaseLabel(m)); }
+      });
+    }
+    if (ocrCancelled || myRun !== ocrRunId) return;
     const img = await downscaleImage(file);
-    const worker = await Tesseract.createWorker(["chi_sim", "eng"], {
-      logger: m => { if (m.status === "recognizing text") setStatus(`正在识别… ${Math.round((m.progress || 0) * 100)}%`); }
-    });
-    let text = "";
-    try { const r = await worker.recognize(img); text = r.data.text || ""; }
-    finally { await worker.terminate(); }
+    if (ocrCancelled || myRun !== ocrRunId) return;
+    setStatus("正在识别… 0%");
+    const { data: { text } } = await ocrWorker.recognize(img);
+    if (ocrCancelled || myRun !== ocrRunId) return;
     if (!text.trim()) { setStatus("没识别出文字，换张更清晰的截图试试"); return; }
     lastOcrText = text;
     lastOcrParsed = parseOcrFields(text);
@@ -2852,8 +2892,11 @@ async function runOcr(file, target, statusEl){
     setStatus(`识别完成，识别出 ${Object.keys(lastOcrParsed).length} 个字段${lastOcrAmenities.length ? "、" + lastOcrAmenities.length + " 处配套" : ""}`);
     openOcrPreview(lastOcrParsed, target);
   } catch (err) {
-    setStatus("识别失败，请检查网络后重试");
-    toast("截图识别失败，请检查网络后重试");
+    if (!ocrCancelled && myRun === ocrRunId) { setStatus("识别失败，请检查网络后重试"); toast("截图识别失败，请检查网络后重试"); }
+    if (ocrWorker) { const w = ocrWorker; ocrWorker = null; w.terminate().catch(() => {}); }
+  } finally {
+    if (ocrStallTimer) { clearTimeout(ocrStallTimer); ocrStallTimer = null; }
+    if (myRun === ocrRunId && ocrCancelBtn) ocrCancelBtn.classList.add("hidden");
   }
 }
 function openOcrPreview(parsed, target){
