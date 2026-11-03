@@ -196,6 +196,7 @@
   .comp-chips{display:flex; flex-wrap:wrap; gap:6px}
   .comp-chip{font-size:12px; padding:3px 10px; border-radius:999px; background:#FFF4E5; color:#9A6200; border:1px solid #F3D9AE}
   .comp-chip.ok{background:#EDF7ED; color:#2E7D32; border-color:#CBE6CB}
+  .comp-chip.na{opacity:.55}
   .imp-line{padding:7px 0; border-bottom:1px solid var(--line); font-size:13.5px}
   .imp-line:last-child{border-bottom:none}
   .imp-sum{font-size:14px; line-height:1.9}
@@ -1441,7 +1442,7 @@ function detailHTML(h){
   s += kv("租售比", h.rentSaleRatio);
   s += kv("近30天成交量", h.transactionVolume);
   { const miss = completenessOf(h);
-    if (miss.length) html += `<section class="dsec"><h4>数据完整度</h4><div class="comp-chips">${completenessGroups(h).map(g => `<span class="comp-chip${g.ok ? " ok" : ""}">${g.ok ? "✓ " : "待补："}${g.label}</span>`).join("")}</div></section>`; }
+    if (miss.length) html += `<section class="dsec"><h4>数据完整度</h4><div class="comp-chips">${completenessGroups(h).map(g => `<span class="comp-chip${g.ok ? " ok" : ""}${g.na ? " na" : ""}">${g.na ? g.label + "不适用" : (g.ok ? "✓ " : "待补：") + g.label}</span>`).join("")}</div></section>`; }
   if (s) html += `<section class="dsec"><h4>价格</h4>${s}</section>`;
   s = "";
   s += kv("建成年", h.builtYear);
@@ -2716,15 +2717,16 @@ function isEmptyVal(v){ return v === null || v === undefined || v === "" || (Arr
 function completenessGroups(h){
   const L = getListings(h);
   const amenKeys = AMEN_FIELDS.map(([k]) => k);
+  const listingsNA = !h.isFavorite && L.length === 0;
   return [
     { label: "基本信息", ok: isSet(h.unitPriceMin) && isSet(h.builtYear) },
     { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.ebikeAMinutes) || isSet(h.transitAMinutes) || isSet(h.hsrStationName) },
     { label: "周边配套", ok: amenKeys.some(k => Array.isArray(h[k]) && h[k].length) },
-    { label: "房源", ok: L.length > 0 },
-    { label: "房源详情", ok: L.some(l => l.baths !== null && l.baths !== undefined) },
+    { label: "房源", ok: L.length > 0, na: listingsNA },
+    { label: "房源详情", ok: L.some(l => l.baths !== null && l.baths !== undefined), na: listingsNA },
   ];
 }
-function completenessOf(h){ return completenessGroups(h).filter(g => !g.ok).map(g => g.label); }
+function completenessOf(h){ return completenessGroups(h).filter(g => !g.ok && !g.na).map(g => g.label); }
 
 const DROPPED_KEYS = new Set(["commuteAKm", "commuteAMinutes", "commuteBKm", "commuteBMinutes"]);
 function mergeForImport(existing, imported){
