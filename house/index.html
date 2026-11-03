@@ -2949,15 +2949,16 @@ function openOcrPreview(parsed, target){
       const subParts = [];
       for (const [key, label] of subs) {
         const items = byKey.get(key); if (!items) continue;
+        const catOptions = (selKey) => AMEN_GROUPS.map(([gtitle, subs]) => `<optgroup label="${gtitle}">${subs.map(([k, label]) => `<option value="${k}" ${k === selKey ? "selected" : ""}>${label}</option>`).join("")}</optgroup>`).join("");
         const rws = items.map(([i, a]) => {
           const exists = [...document.querySelectorAll(`#amen-${key} .arr-row input[data-af="name"]`)].some(inp => inp.value.trim() === a.name);
-          return `<label style="display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px"><input type="checkbox" data-ocr-amen="${i}" ${exists ? "" : "checked"}><span style="flex:1">${esc(a.name)}</span><span style="color:var(--muted);font-size:12.5px">${a.distanceKm !== null ? a.distanceKm + " km" : "距离未知"}${exists ? " · 已存在" : ""}</span></label>`;
+          return `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px"><label style="display:flex;gap:8px;align-items:baseline;flex:1"><input type="checkbox" data-ocr-amen="${i}" ${exists ? "" : "checked"}><span style="flex:1">${esc(a.name)}</span></label><select data-ocr-amen-cat="${i}" style="font-size:13px;max-width:110px">${catOptions(a.key)}</select><span style="color:var(--muted);font-size:12.5px;flex:none">${a.distanceKm !== null ? a.distanceKm + " km" : "距离未知"}${exists ? " · 已存在" : ""}</span></div>`;
         }).join("");
         subParts.push(`<div style="font-size:13px;color:var(--muted);margin:10px 0 4px">${label}</div>${rws}`);
       }
       if (subParts.length) parts.push(`<div style="font-size:13px;font-weight:600;margin:14px 0 2px">${gtitle}</div>${subParts.join("")}`);
     }
-    if (parts.length) amenHTML = `<div style="margin-top:14px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">配套（按分类，勾选的填入对应配套编辑区）</div>${parts.join("")}</div>`;
+    if (parts.length) amenHTML = `<div style="margin-top:14px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">配套（分类不对可在下拉框里改，勾选的填入对应分类的编辑区）</div>${parts.join("")}</div>`;
   }
   if (!rows.length && !amenHTML) {
     if (target === "listing" && lastOcrAmenities.length) { toast(`这张图里没有房源字段，但识别到 ${lastOcrAmenities.length} 处配套，配套请到小区表单里识别填入`); return; }
@@ -3008,7 +3009,9 @@ document.getElementById("btn-apply-ocr").addEventListener("click", () => {
   document.querySelectorAll("#ocr-preview-body [data-ocr-amen]").forEach(cb => {
     if (!cb.checked) return;
     const a = lastOcrAmenities[Number(cb.dataset.ocrAmen)];
-    const box = a ? document.getElementById("amen-" + a.key) : null;
+    const catSel = document.querySelector(`#ocr-preview-body [data-ocr-amen-cat="${cb.dataset.ocrAmen}"]`);
+    const key = catSel ? catSel.value : (a && a.key);
+    const box = a ? document.getElementById("amen-" + key) : null;
     if (!box) return;
     box.insertAdjacentHTML("beforeend", amenRow({ name: a.name, distanceKm: a.distanceKm ?? "", note: "" }));
     na++;
