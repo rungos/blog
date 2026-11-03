@@ -634,6 +634,18 @@
   </div>
 </div>
 
+<div class="modal-wrap hidden" id="ocr-wrap">
+  <div class="modal-scrim" data-close-ocr></div>
+  <div class="modal" style="width:640px">
+    <div class="modal-head"><h2>截图识别预览</h2><button class="modal-close" data-close-ocr>✕</button></div>
+    <div class="modal-body" id="ocr-preview-body"></div>
+    <div class="modal-foot">
+      <button class="btn" data-close-ocr>取消</button>
+      <button class="btn primary" id="btn-apply-ocr">填入表单</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================= 看房打卡弹窗 ================= -->
 <div class="modal-wrap hidden" id="viewing-wrap">
   <div class="modal-scrim" data-close-vw></div>
@@ -1674,7 +1686,7 @@ function openListingForm(houseId, listingId){
   $("#listing-title").textContent = (l ? "编辑房源" : "添加房源") + " · " + (h.community || "");
   const st = l?.status || "onsale", so = l?.source || "manual";
   const floorTextInit = l ? (l.floorText ? String(l.floorText) : (isSet(l.floor) ? l.floor + "层" : "")) : "";
-  $("#listing-form").innerHTML = `<section class="fsec"><h4>户型图</h4><div class="lf-plan" id="lf-plan-box"></div></section><section class="fsec"><div class="fgrid">
+  $("#listing-form").innerHTML = ocrSectionHTML("listing") + `<section class="fsec"><h4>户型图</h4><div class="lf-plan" id="lf-plan-box"></div></section><section class="fsec"><div class="fgrid">
     ${lfNum("lf-rooms", "室", l?.rooms)}${lfNum("lf-halls", "厅", l?.halls)}
     ${lfNum("lf-baths", "卫", l?.baths)}${lfNum("lf-areaSqm", "面积（㎡）", l?.areaSqm)}
     ${lfNum("lf-totalPriceWan", "总价（万）", l?.totalPriceWan)}${lfNum("lf-unitPrice", "单价（元/㎡）", l?.unitPrice, "留空按总价÷面积算")}
@@ -1724,6 +1736,7 @@ function openListingForm(houseId, listingId){
     ${lfText("lf-agentNote", "中介备注", l?.agentNote, "", true)}
   </div></section>`;
   document.querySelectorAll("#listing-form [data-floor-pick]").forEach(b => b.addEventListener("click", () => { const inp = $("#lf-floorText"); inp.value = b.dataset.floorPick; inp.focus(); }));
+  wireOcrSection("listing");
   const lfAutoRatio = () => {
     const tp = Number($("#lf-totalPriceWan").value), mr = Number($("#lf-monthlyRent").value);
     if (tp > 0 && mr > 0) $("#lf-rentRatio").value = "1:" + Math.round(tp * 10000 / mr);
@@ -2594,6 +2607,7 @@ function openEdit(id){
       ${[1,2,3,4,5].map(n=>`<button type="button" data-rate="${n}" class="${h.rating===n?"on":""}">${n}★</button>`).join("")}
       <button type="button" data-rate="0" class="${!h.rating?"on":""}">无</button>
     </div></div></div></section>`;
+  html += ocrSectionHTML("community");
   const hv = { ...h };
   if (hv.hasElevator === true || hv.hasElevator === 1) hv.hasElevator = "有";
   else if (hv.hasElevator === false || hv.hasElevator === 0) hv.hasElevator = "无";
@@ -2641,6 +2655,7 @@ function openEdit(id){
   };
   [rentEl, totMinEl, totMaxEl].forEach(el => { if (el) el.addEventListener("input", autoRatio); });
   if (ratioEl && !ratioEl.value.trim()) autoRatio();
+  wireOcrSection("community");
   $("#edit-wrap").classList.remove("hidden");
   document.body.classList.add("locked");
 }
@@ -2655,6 +2670,251 @@ $("#edit-form").addEventListener("click", e => {
   const del = e.target.closest(".arr-del");
   if (del) del.closest(".arr-row").remove();
 });
+
+/* ================= 截图识别（OCR） ================= */
+let ocrLibLoading = null, lastOcrParsed = null, lastOcrText = "", lastOcrAmenities = [], ocrTarget = null;
+const OCR_FIELD_INPUTS = {
+  community: { community: "ef-community", builtYear: "ef-builtYear", totalFloors: "ef-totalFloors", totalBuildings: "ef-totalBuildings", totalHouseholds: "ef-totalHouseholds", density: "ef-density", greenery: "ef-greenery", propertyFee: "ef-propertyFee", subwayKm: "ef-subwayKm", busKm: "ef-busKm" },
+  listing: { rooms: "lf-rooms", halls: "lf-halls", baths: "lf-baths", areaSqm: "lf-areaSqm", totalPriceWan: "lf-totalPriceWan", unitPrice: "lf-unitPrice", orientation: "lf-orientation", floorText: "lf-floorText", totalFloors: "lf-totalFloors", decoration: "lf-decoration", elevatorRatio: "lf-elevatorRatio", hasElevator: "lf-hasElevator", houseAge: "lf-houseAge", mortgage: "lf-mortgage", houseType: "lf-houseType", ownership: "lf-ownership", agentPhone: "lf-agentPhone" },
+};
+function ocrSectionHTML(target){
+  const pre = target === "community" ? "ef" : "lf";
+  const hint = window.Tesseract ? "识别库已就绪，选图后自动识别" : "首次使用需下载中文字库（约十几 MB），之后就快了";
+  return `<section class="fsec"><h4>📷 截图识别</h4><div class="fgrid">
+    <div class="fld"><label>选一张贝壳截图</label><input type="file" id="${pre}-ocr-file" accept="image/*"></div>
+    <div class="fld"><label>识别后核对再填入</label><div id="${pre}-ocr-status" style="font-size:13px;color:var(--muted)">${hint}</div></div></div>
+    ${lastOcrParsed ? `<button type="button" class="btn small" id="${pre}-ocr-reuse">用上次识别结果填入</button>` : ""}</section>`;
+}
+function wireOcrSection(target){
+  const pre = target === "community" ? "ef" : "lf";
+  const fileEl = document.getElementById(pre + "-ocr-file");
+  if (fileEl) fileEl.addEventListener("change", async e => {
+    const f = (e.target.files || [])[0]; e.target.value = "";
+    if (!f) return;
+    await runOcr(f, target, document.getElementById(pre + "-ocr-status"));
+  });
+  const reEl = document.getElementById(pre + "-ocr-reuse");
+  if (reEl) reEl.addEventListener("click", () => openOcrPreview(lastOcrParsed, target));
+}
+function loadOcrLib(){
+  if (window.Tesseract) return Promise.resolve();
+  if (ocrLibLoading) return ocrLibLoading;
+  ocrLibLoading = new Promise((resolve, reject) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    sc.onload = () => resolve();
+    sc.onerror = () => { ocrLibLoading = null; reject(new Error("load")); };
+    document.head.appendChild(sc);
+  });
+  return ocrLibLoading;
+}
+function downscaleImage(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      const scale = Math.min(1, 2000 / Math.max(im.width, im.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * scale); c.height = Math.round(im.height * scale);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
+    im.src = url;
+  });
+}
+function parseOcrFields(text){
+  const flat = text.replace(/\s+/g, "");
+  const lines = text.split(/\n/).map(x => x.trim()).filter(Boolean);
+  const out = {};
+  const num = v => Number(String(v).replace(/,/g, ""));
+  let m = flat.match(/(\d[\d,]{3,})元\/(㎡|平|m2|平方米)/);
+  if (!m) for (const ln of lines) { if (/单价/.test(ln)) { const mm = ln.replace(/\s+/g, "").match(/(\d[\d,]{3,})元/); if (mm) { m = mm; break; } } }
+  if (m) out.unitPrice = { label: "单价", value: num(m[1]) };
+  let total = null;
+  for (const ln of lines) {
+    const c = ln.replace(/\s+/g, "");
+    if (/售价|总价|报价/.test(c)) { const mm = c.match(/(\d[\d,.]*)万/); if (mm) { total = num(mm[1]); break; } }
+  }
+  if (total === null) { const mm = flat.match(/(\d[\d,.]{1,})万/); if (mm) { const v = num(mm[1]); if (v >= 10 && v <= 10000) total = v; } }
+  if (total !== null) out.totalPriceWan = { label: "总价", value: total };
+  m = flat.match(/(\d)室(\d)厅(\d)?卫?/);
+  if (m) { out.rooms = { label: "室", value: Number(m[1]) }; out.halls = { label: "厅", value: Number(m[2]) }; if (m[3]) out.baths = { label: "卫", value: Number(m[3]) }; }
+  m = flat.match(/(\d{2,3}(?:\.\d+)?)(㎡|平米|平方米)/);
+  if (m) { const v = Number(m[1]); if (v >= 15 && v <= 600) out.areaSqm = { label: "面积", value: v }; }
+  for (const ln of lines) {
+    if (/朝向/.test(ln)) { const mm = ln.match(/(南北|东南|西南|东北|西北|东|南|西|北)/); if (mm) { out.orientation = { label: "朝向", value: mm[1] }; break; } }
+  }
+  if (!out.orientation) for (const ln of lines) {
+    const c = ln.replace(/\s+/g, "");
+    if (/^(南北|东南|西南|东北|西北|东|南|西|北)(通透)?$/.test(c)) { out.orientation = { label: "朝向", value: c.replace("通透", "") }; break; }
+  }
+  const fm = flat.match(/(\d+)层.{0,3}共(\d+)层/);
+  if (fm) { out.floorText = { label: "楼层", value: fm[1] + "层" }; out.totalFloors = { label: "总层数", value: Number(fm[2]) }; }
+  else { const fl = flat.match(/(低楼层|中楼层|高楼层|底层|顶层)/); if (fl) out.floorText = { label: "楼层", value: fl[1] }; }
+  const tm = flat.match(/共(\d+)层/);
+  if (tm && !out.totalFloors) out.totalFloors = { label: "总层数", value: Number(tm[1]) };
+  m = flat.match(/(精装|简装|毛坯|豪装)/);
+  if (m) out.decoration = { label: "装修", value: m[1] };
+  m = flat.match(/((?:19|20)\d{2})年建/);
+  if (!m) for (const ln of lines) { if (/建筑年代|建成|竣工/.test(ln)) { const mm = ln.match(/((?:19|20)\d{2})年/); if (mm) { m = mm; break; } } }
+  if (m) out.builtYear = { label: "建成年", value: Number(m[1]) };
+  m = flat.match(/([一两三四])梯([一二两三四五六七八九\d]+)户/);
+  if (m) out.elevatorRatio = { label: "梯户比", value: m[1] + "梯" + m[2] + "户" };
+  if (/无电梯/.test(flat)) out.hasElevator = { label: "电梯", value: 0 };
+  else if (/有电梯/.test(flat)) out.hasElevator = { label: "电梯", value: 1 };
+  if (/满五唯一/.test(flat)) out.houseAge = { label: "房屋年限", value: "满五唯一" };
+  else if (/不满二年|不满两年/.test(flat)) out.houseAge = { label: "房屋年限", value: "不满二年" };
+  else if (/满五年/.test(flat)) out.houseAge = { label: "房屋年限", value: "满五年" };
+  else if (/满二年|满两年/.test(flat)) out.houseAge = { label: "房屋年限", value: "满二年" };
+  if (/无抵押/.test(flat)) out.mortgage = { label: "抵押", value: "无抵押" };
+  else if (/有抵押/.test(flat)) out.mortgage = { label: "抵押", value: "有抵押" };
+  const grabNum = (re) => { const mm = flat.match(re); return mm ? Number(mm[1]) : null; };
+  let pv;
+  pv = grabNum(/物业费[：:]*(\d+(?:\.\d+)?)/); if (pv !== null) out.propertyFee = { label: "物业费", value: pv };
+  pv = grabNum(/容积率[：:]*(\d+(?:\.\d+)?)/); if (pv !== null) out.density = { label: "容积率", value: pv };
+  const gm = flat.match(/绿化率[：:]*(\d+(?:\.\d+)?)\s*%/); if (gm) out.greenery = { label: "绿化", value: gm[1] + "%" };
+  pv = grabNum(/总户数[：:]*(\d+)/); if (pv !== null) out.totalHouseholds = { label: "总户数", value: pv };
+  pv = grabNum(/楼栋数[：:]*(\d+)/); if (pv !== null) out.totalBuildings = { label: "楼栋数", value: pv };
+  for (const ln of lines) { const mm = ln.match(/小区[：:]\s*(.+)/); if (mm && mm[1].trim().length >= 2) { out.community = { label: "小区名", value: mm[1].trim() }; break; } }
+  if (/普通住宅/.test(flat)) out.houseType = { label: "房屋类型", value: "普通住宅" };
+  else if (/商住两用/.test(flat)) out.houseType = { label: "房屋类型", value: "商住两用" };
+  else if (/四合院/.test(flat)) out.houseType = { label: "房屋类型", value: "四合院" };
+  else if (/公寓/.test(flat)) out.houseType = { label: "房屋类型", value: "公寓" };
+  else if (/别墅/.test(flat)) out.houseType = { label: "房屋类型", value: "别墅" };
+  if (/公司产权/.test(flat)) out.ownership = { label: "产权所属", value: "公司产权" };
+  else if (/非共有/.test(flat)) out.ownership = { label: "产权所属", value: "非共有" };
+  else if (/共有/.test(flat)) out.ownership = { label: "产权所属", value: "共有" };
+  const ph = flat.match(/1[3-9]\d{9}/); if (ph) out.agentPhone = { label: "中介电话", value: ph[0] };
+  return out;
+}
+const AMEN_CLASSIFY = [
+  [/地铁/, "subway"], [/公交|巴士/, "bus"],
+  [/幼儿园|幼稚园/, "kindergartens"], [/小学/, "primarySchools"],
+  [/中学|初中|高中/, "middleSchools"], [/大学|学院/, "universities"],
+  [/医院|卫生院|卫生站|卫生服务中心/, "hospitals"], [/药店|药房|大药房/, "pharmacy"],
+  [/商场|购物中心|购物广场|商城|百货/, "malls"], [/超市|便利店/, "supermarkets"],
+  [/市场|菜市|农贸/, "markets"], [/银行/, "bank"], [/ATM|自动取款|自助取款/, "atm"],
+  [/餐厅|饭店|饭庄|食府|酒楼|小吃店/, "restaurant"], [/咖啡/, "cafe"],
+  [/公园|森林公园/, "parks"], [/影院|电影院/, "cinema"],
+  [/健身房|健身中心/, "gym"], [/体育馆|体育中心|体育场/, "stadium"],
+];
+function parseOcrAmenities(text){
+  const out = [];
+  const seen = new Set();
+  for (const raw of text.split(/\n/)) {
+    const ln = raw.trim(); if (!ln) continue;
+    if (/附近|周边配套|交通出行|教育资源|医疗配套|购物休闲|生活配套|娱乐休闲|展开|收起|查看全部|更多/.test(ln)) continue;
+    const dm = ln.match(/(\d+(?:\.\d+)?)\s*(公里|千米|km|米|m)/i);
+    let name = dm ? ln.slice(0, ln.indexOf(dm[0])).trim() : ln;
+    name = name.replace(/^[·•\-\s\d.]+/, "").replace(/[：:·•\-]+$/, "").replace(/(距离|约|大约)+$/, "").trim();
+    if (!dm && name.length < 4) continue;
+    if (name.length < 2 || name.length > 30) continue;
+    let key = null;
+    for (const [re, k] of AMEN_CLASSIFY) if (re.test(name)) { key = k; break; }
+    if (!key) continue;
+    let dkm = null;
+    if (dm) { const v = Number(dm[1]); const isMeter = dm[2] === "米" || dm[2].toLowerCase() === "m"; dkm = isMeter ? Math.round(v / 1000 * 100) / 100 : v; }
+    const dedup = key + "|" + name;
+    if (seen.has(dedup)) continue;
+    seen.add(dedup);
+    out.push({ key, name, distanceKm: dkm });
+  }
+  return out;
+}
+async function runOcr(file, target, statusEl){
+  const setStatus = t => { if (statusEl) statusEl.textContent = t; };
+  try {
+    setStatus("正在加载识别库…");
+    await loadOcrLib();
+    setStatus("正在识别… 0%");
+    const img = await downscaleImage(file);
+    const worker = await Tesseract.createWorker(["chi_sim", "eng"], {
+      logger: m => { if (m.status === "recognizing text") setStatus(`正在识别… ${Math.round((m.progress || 0) * 100)}%`); }
+    });
+    let text = "";
+    try { const r = await worker.recognize(img); text = r.data.text || ""; }
+    finally { await worker.terminate(); }
+    if (!text.trim()) { setStatus("没识别出文字，换张更清晰的截图试试"); return; }
+    lastOcrText = text;
+    lastOcrParsed = parseOcrFields(text);
+    lastOcrAmenities = parseOcrAmenities(text);
+    const minDist = (key) => { const ds = lastOcrAmenities.filter(a => a.key === key && a.distanceKm !== null).map(a => a.distanceKm); return ds.length ? Math.min(...ds) : null; };
+    const sMin = minDist("subway"), bMin = minDist("bus");
+    if (sMin !== null) lastOcrParsed.subwayKm = { label: "地铁距离", value: sMin };
+    if (bMin !== null) lastOcrParsed.busKm = { label: "公交距离", value: bMin };
+    setStatus(`识别完成，识别出 ${Object.keys(lastOcrParsed).length} 个字段${lastOcrAmenities.length ? "、" + lastOcrAmenities.length + " 处配套" : ""}`);
+    openOcrPreview(lastOcrParsed, target);
+  } catch (err) {
+    setStatus("识别失败，请检查网络后重试");
+    toast("截图识别失败，请检查网络后重试");
+  }
+}
+function openOcrPreview(parsed, target){
+  ocrTarget = target;
+  const map = OCR_FIELD_INPUTS[target];
+  const rows = Object.entries(parsed).filter(([k]) => map[k]);
+  let amenHTML = "";
+  if (target === "community" && lastOcrAmenities.length) {
+    const byKey = new Map();
+    lastOcrAmenities.forEach((a, i) => { if (!byKey.has(a.key)) byKey.set(a.key, []); byKey.get(a.key).push([i, a]); });
+    const parts = [];
+    for (const [gtitle, subs] of AMEN_GROUPS) {
+      const subParts = [];
+      for (const [key, label] of subs) {
+        const items = byKey.get(key); if (!items) continue;
+        const rws = items.map(([i, a]) => {
+          const exists = [...document.querySelectorAll(`#amen-${key} .arr-row input[data-af="name"]`)].some(inp => inp.value.trim() === a.name);
+          return `<label style="display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px"><input type="checkbox" data-ocr-amen="${i}" ${exists ? "" : "checked"}><span style="flex:1">${esc(a.name)}</span><span style="color:var(--muted);font-size:12.5px">${a.distanceKm !== null ? a.distanceKm + " km" : "距离未知"}${exists ? " · 已存在" : ""}</span></label>`;
+        }).join("");
+        subParts.push(`<div style="font-size:13px;color:var(--muted);margin:10px 0 4px">${label}</div>${rws}`);
+      }
+      if (subParts.length) parts.push(`<div style="font-size:13px;font-weight:600;margin:14px 0 2px">${gtitle}</div>${subParts.join("")}`);
+    }
+    if (parts.length) amenHTML = `<div style="margin-top:14px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">配套（按分类，勾选的填入对应配套编辑区）</div>${parts.join("")}</div>`;
+  }
+  if (!rows.length && !amenHTML) { toast("没识别出能填的字段，换张更清晰的截图试试"); return; }
+  const body = rows.map(([k, f]) => {
+    const el = document.getElementById(map[k]);
+    const cur = el ? el.value : "";
+    const conflict = cur !== "" && String(cur) !== String(f.value);
+    return `<label style="display:flex;gap:8px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px"><input type="checkbox" data-ocr-key="${k}" ${conflict ? "" : "checked"}><span style="color:var(--muted);flex:none">${f.label}</span><b>${esc(String(f.value))}</b>${conflict ? `<span style="font-size:12.5px;color:var(--muted)">已有值 ${esc(cur)}，勾选则覆盖</span>` : ""}</label>`;
+  }).join("");
+  document.getElementById("ocr-preview-body").innerHTML = `<p style="font-size:13px;color:var(--muted)">只填你勾选的项，字段填入表单，配套填入对应分类的编辑区，填完请在表单里检查一遍再保存，不会自动保存。</p>${body}${amenHTML}<details style="margin-top:12px"><summary style="font-size:13px;color:var(--muted)">查看识别原文</summary><pre style="white-space:pre-wrap;word-break:break-all;font-size:12.5px">${esc(lastOcrText)}</pre></details>`;
+  document.getElementById("ocr-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
+function closeOcr(){
+  document.getElementById("ocr-wrap").classList.add("hidden");
+  if (!document.getElementById("drawer").classList.contains("open") && document.getElementById("edit-wrap").classList.contains("hidden") && document.getElementById("listing-wrap").classList.contains("hidden") && document.getElementById("cmp-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+document.getElementById("btn-apply-ocr").addEventListener("click", () => {
+  const map = OCR_FIELD_INPUTS[ocrTarget];
+  let n = 0;
+  document.querySelectorAll("#ocr-preview-body [data-ocr-key]").forEach(cb => {
+    if (!cb.checked) return;
+    const f = lastOcrParsed[cb.dataset.ocrKey], el = document.getElementById(map[cb.dataset.ocrKey]);
+    if (!el || !f) return;
+    el.value = f.value;
+    el.style.background = "var(--soft)";
+    setTimeout(() => { el.style.background = ""; }, 2500);
+    n++;
+  });
+  let na = 0;
+  document.querySelectorAll("#ocr-preview-body [data-ocr-amen]").forEach(cb => {
+    if (!cb.checked) return;
+    const a = lastOcrAmenities[Number(cb.dataset.ocrAmen)];
+    const box = a ? document.getElementById("amen-" + a.key) : null;
+    if (!box) return;
+    box.insertAdjacentHTML("beforeend", amenRow({ name: a.name, distanceKm: a.distanceKm ?? "", note: "" }));
+    na++;
+  });
+  closeOcr();
+  toast(`已填入 ${n} 项${na ? "，配套 " + na + " 处" : ""}，请检查后保存`);
+});
+document.querySelectorAll("[data-close-ocr]").forEach(el => el.addEventListener("click", closeOcr));
+
 function readForm(){
   const old = editingId ? byId(editingId) : {};
   const rec = { ...old };
