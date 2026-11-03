@@ -2716,16 +2716,33 @@ function loadOcrLib(){
   });
   return ocrLibLoading;
 }
-function downscaleImage(file){
+function processImage(file){
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const im = new Image();
     im.onload = () => {
-      const scale = Math.min(1, 2000 / Math.max(im.width, im.height));
+      const maxEdge = Math.max(im.width, im.height);
+      let scale = 1;
+      if (maxEdge > 3000) scale = 3000 / maxEdge;
+      else if (maxEdge < 2000) scale = Math.min(1.5, 3000 / maxEdge);
       const c = document.createElement("canvas");
       c.width = Math.round(im.width * scale); c.height = Math.round(im.height * scale);
-      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(im, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
+      try {
+        const imageData = ctx.getImageData(0, 0, c.width, c.height);
+        const d = imageData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          let v = (g - 128) * 1.25 + 128;
+          v = v < 0 ? 0 : v > 255 ? 255 : v;
+          d[i] = d[i + 1] = d[i + 2] = v;
+        }
+        ctx.putImageData(imageData, 0, 0);
+      } catch (e) { /* 预处理失败时直接用原图，不阻断识别 */ }
       resolve(c);
     };
     im.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
@@ -2874,9 +2891,10 @@ async function runOcr(file, target, statusEl){
       ocrWorker = await Tesseract.createWorker(["chi_sim"], 1 /* OEM.LSTM_ONLY：v5 的 createWorker 参数是（语言，引擎模式，选项），logger 必须放在第 3 个参数里 */, {
         logger: m => { ocrArmStall(); if (ocrStatusFn) ocrStatusFn(ocrPhaseLabel(m)); }
       });
+      try { await ocrWorker.setParameters({ tessedit_pageseg_mode: "6" }); } catch (e) { /* PSM 设置失败不阻断识别 */ }
     }
     if (ocrCancelled || myRun !== ocrRunId) return;
-    const img = await downscaleImage(file);
+    const img = await processImage(file);
     if (ocrCancelled || myRun !== ocrRunId) return;
     setStatus("正在识别… 0%");
     const { data: { text } } = await ocrWorker.recognize(img);
