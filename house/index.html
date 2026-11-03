@@ -2818,8 +2818,11 @@ const AMEN_CLASSIFY = [
   [/地铁/, "subway"], [/公交|巴士/, "bus"],
   [/幼儿园|幼稚园/, "kindergartens"], [/小学/, "primarySchools"],
   [/中学|初中|高中/, "middleSchools"], [/大学|学院/, "universities"],
+  // 只有“学校”二字时归小学（京源学校、第二实验学校这类名里没有小学/中学/大学）
+  [/学校/, "primarySchools"],
   [/医院|卫生院|卫生站|卫生服务中心/, "hospitals"], [/药店|药房|大药房/, "pharmacy"],
-  [/商场|购物中心|购物广场|商城|百货/, "malls"], [/超市|便利店/, "supermarkets"],
+  // 商场名常是“XX广场”“XX新天地”，不带“商场”二字
+  [/商场|购物中心|购物广场|商城|百货|广场|新天地/, "malls"], [/超市|便利店/, "supermarkets"],
   [/市场|菜市|农贸/, "markets"], [/银行/, "bank"], [/ATM|自动取款|自助取款/, "atm"],
   // 店名很少带“餐厅”二字，多是菜系吃法（山西菜、烤鸭、寿司）；菜排除菜市（菜市场归市场类，顺序在前已保护）
   [/餐厅|饭店|饭庄|食府|酒楼|小吃店|餐馆|菜馆|饭馆|酒家|烤鸭|寿司|火锅|烧烤|面馆|料理|小吃|快餐|自助餐|菜(?!市)/, "restaurant"], [/咖啡/, "cafe"],
@@ -2835,12 +2838,15 @@ function parseOcrAmenities(text){
     // 关键：识别引擎会在汉字之间插空格（“银 行”），必须先压掉空格再匹配关键词，否则“银行”永远匹配不上“银 行”
     const ln = raw.replace(/\s+/g, ""); if (!ln) continue;
     if (/附近|周边配套|交通出行|教育资源|医疗配套|购物休闲|生活配套|娱乐休闲|展开|收起|查看全部|更多/.test(ln)) { last = null; continue; }
+    if (/^\D{1,8}\d+处$/.test(ln)) { last = null; continue; } // “小学3处”这类计数标题，不是地点
     const dm = ln.match(/(\d+(?:\.\d+)?)(公里|千米|km|米|m)/i);
     let name = dm ? ln.slice(0, ln.indexOf(dm[0])) : ln;
     name = name.replace(/^[·•\-\d.@#*¥\[\]|]+/, "").replace(/[：:·•\-]+$/, "").replace(/(距离|约|大约)+$/, "");
     if (dm) name = name.replace(/[亿人【\|\[\]]+$/, ""); // 导航箭头图标常被认成亿/人/【，夹在名字和距离之间
+    const matchName = name.replace(/[(（][^)）]*[)）]/g, "") || name;
     const matchedKeys = [];
-    for (const [re, k] of AMEN_CLASSIFY) if (re.test(name)) matchedKeys.push(k);
+    for (const [re, k] of AMEN_CLASSIFY) if (re.test(matchName)) matchedKeys.push(k);
+    if (!matchedKeys.length) for (const [re, k] of AMEN_CLASSIFY) if (re.test(name)) matchedKeys.push(k);
     if (matchedKeys.length > 1) {
       // 多类别同行且去掉类别词后几乎不剩内容 = 顶栏分类条（如“银行 ATM 餐厅 咖啡馆”），不是具体地点
       let rest = name;
@@ -2855,6 +2861,7 @@ function parseOcrAmenities(text){
       else last = null;
       continue;
     }
+    if (!dm && /路|街|号|层|座|栋|单元/.test(name)) { last = null; continue; }
     if (!dm && name.length < 4) { last = null; continue; }
     if (name.length < 2 || name.length > 30) { last = null; continue; }
     let dkm = null;
