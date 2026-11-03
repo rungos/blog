@@ -268,6 +268,9 @@
   .amen-note{color:var(--muted); font-size:12.5px}
   .amen-d{flex:none; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums}
   .amen-group-h{margin:14px 0 2px; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em}
+  .ocr-paste{min-height:64px; border:1.5px dashed var(--line); border-radius:12px; padding:12px 14px; font-size:13.5px; color:var(--ink); outline:none; margin-bottom:10px}
+  .ocr-paste:empty::before{content:attr(data-placeholder); color:var(--muted)}
+  .ocr-paste:focus{border-color:var(--red)}
   .amen-more{display:inline-block; margin-top:7px; padding:0; background:none; border:none; font-size:13px; color:var(--ink); cursor:pointer}
   .notes-txt{white-space:pre-wrap; word-break:break-word; font-size:14px; color:var(--text); padding-bottom:10px; border-bottom:1px solid var(--line)}
   .lsec-body{border-bottom:1px solid var(--line)}
@@ -2680,8 +2683,10 @@ const OCR_FIELD_INPUTS = {
 function ocrSectionHTML(target){
   const pre = target === "community" ? "ef" : "lf";
   const hint = window.Tesseract ? "识别库已就绪，选图后自动识别" : "首次使用需下载中文字库（约十几 MB），之后就快了";
-  return `<section class="fsec"><h4>📷 截图识别</h4><div class="fgrid">
-    <div class="fld"><label>选一张贝壳截图</label><input type="file" id="${pre}-ocr-file" accept="image/*"></div>
+  return `<section class="fsec"><h4>📷 截图识别</h4>
+    <div class="ocr-paste" id="${pre}-ocr-paste" contenteditable="true" data-placeholder="点这里，然后粘贴截图（电脑按 Ctrl+V，手机长按选粘贴）"></div>
+    <div class="fgrid">
+    <div class="fld"><label>或者选一张图</label><input type="file" id="${pre}-ocr-file" accept="image/*"></div>
     <div class="fld"><label>识别后核对再填入</label><div id="${pre}-ocr-status" style="font-size:13px;color:var(--muted)">${hint}</div></div></div>
     ${lastOcrParsed ? `<button type="button" class="btn small" id="${pre}-ocr-reuse">用上次识别结果填入</button>` : ""}</section>`;
 }
@@ -2889,6 +2894,21 @@ function closeOcr(){
   document.getElementById("ocr-wrap").classList.add("hidden");
   if (!document.getElementById("drawer").classList.contains("open") && document.getElementById("edit-wrap").classList.contains("hidden") && document.getElementById("listing-wrap").classList.contains("hidden") && document.getElementById("cmp-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
 }
+document.addEventListener("paste", e => {
+  const items = [...(e.clipboardData?.items || [])];
+  const imgItem = items.find(it => it.kind === "file" && it.type && it.type.startsWith("image/"));
+  const file = imgItem ? imgItem.getAsFile() : (e.clipboardData?.files?.[0] || null);
+  if (!file) return;
+  const listingOpen = !document.getElementById("listing-wrap").classList.contains("hidden");
+  const editOpen = !document.getElementById("edit-wrap").classList.contains("hidden");
+  if (!listingOpen && !editOpen) return;
+  e.preventDefault();
+  const target = listingOpen ? "listing" : "community";
+  const pre = target === "community" ? "ef" : "lf";
+  const pasteBox = document.getElementById(pre + "-ocr-paste");
+  if (pasteBox) pasteBox.innerHTML = "";
+  runOcr(file, target, document.getElementById(pre + "-ocr-status"));
+});
 document.getElementById("btn-apply-ocr").addEventListener("click", () => {
   const map = OCR_FIELD_INPUTS[ocrTarget];
   let n = 0;
