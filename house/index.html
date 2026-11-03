@@ -2871,7 +2871,7 @@ async function runOcr(file, target, statusEl){
     setStatus("正在准备识别器…");
     ocrArmStall();
     if (!ocrWorker) {
-      ocrWorker = await Tesseract.createWorker(["chi_sim"], {
+      ocrWorker = await Tesseract.createWorker(["chi_sim"], 1 /* OEM.LSTM_ONLY：v5 的 createWorker 参数是（语言，引擎模式，选项），logger 必须放在第 3 个参数里 */, {
         logger: m => { ocrArmStall(); if (ocrStatusFn) ocrStatusFn(ocrPhaseLabel(m)); }
       });
     }
