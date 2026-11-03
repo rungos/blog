@@ -2823,7 +2823,8 @@ const AMEN_CLASSIFY = [
   [/市场|菜市|农贸/, "markets"], [/银行/, "bank"], [/ATM|自动取款|自助取款/, "atm"],
   [/餐厅|饭店|饭庄|食府|酒楼|小吃店/, "restaurant"], [/咖啡/, "cafe"],
   [/公园|森林公园/, "parks"], [/影院|电影院/, "cinema"],
-  [/健身房|健身中心/, "gym"], [/体育馆|体育中心|体育场/, "stadium"],
+  // 店名常只写“健身”“训练馆”“GYM”，不一定带“健身房”三字
+  [/健身|训练馆|gym/i, "gym"], [/体育馆|体育中心|体育场/, "stadium"],
 ];
 function parseOcrAmenities(text){
   const out = [];
