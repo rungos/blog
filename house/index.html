@@ -2828,23 +2828,41 @@ const AMEN_CLASSIFY = [
 function parseOcrAmenities(text){
   const out = [];
   const seen = new Set();
+  let last = null;
   for (const raw of text.split(/\n/)) {
-    const ln = raw.trim(); if (!ln) continue;
-    if (/附近|周边配套|交通出行|教育资源|医疗配套|购物休闲|生活配套|娱乐休闲|展开|收起|查看全部|更多/.test(ln)) continue;
-    const dm = ln.match(/(\d+(?:\.\d+)?)\s*(公里|千米|km|米|m)/i);
-    let name = dm ? ln.slice(0, ln.indexOf(dm[0])).trim() : ln;
-    name = name.replace(/^[·•\-\s\d.]+/, "").replace(/[：:·•\-]+$/, "").replace(/(距离|约|大约)+$/, "").trim();
-    if (!dm && name.length < 4) continue;
-    if (name.length < 2 || name.length > 30) continue;
-    let key = null;
-    for (const [re, k] of AMEN_CLASSIFY) if (re.test(name)) { key = k; break; }
-    if (!key) continue;
+    // 关键：识别引擎会在汉字之间插空格（“银 行”），必须先压掉空格再匹配关键词，否则“银行”永远匹配不上“银 行”
+    const ln = raw.replace(/\s+/g, ""); if (!ln) continue;
+    if (/附近|周边配套|交通出行|教育资源|医疗配套|购物休闲|生活配套|娱乐休闲|展开|收起|查看全部|更多/.test(ln)) { last = null; continue; }
+    const dm = ln.match(/(\d+(?:\.\d+)?)(公里|千米|km|米|m)/i);
+    let name = dm ? ln.slice(0, ln.indexOf(dm[0])) : ln;
+    name = name.replace(/^[·•\-\d.@#*¥\[\]|]+/, "").replace(/[：:·•\-]+$/, "").replace(/(距离|约|大约)+$/, "");
+    if (dm) name = name.replace(/[亿人【\|\[\]]+$/, ""); // 导航箭头图标常被认成亿/人/【，夹在名字和距离之间
+    const matchedKeys = [];
+    for (const [re, k] of AMEN_CLASSIFY) if (re.test(name)) matchedKeys.push(k);
+    if (matchedKeys.length > 1) {
+      // 多类别同行且去掉类别词后几乎不剩内容 = 顶栏分类条（如“银行 ATM 餐厅 咖啡馆”），不是具体地点
+      let rest = name;
+      for (const [re] of AMEN_CLASSIFY) rest = rest.replace(re, "");
+      rest = rest.replace(/[_“”"·•\-]+/g, "");
+      if (rest.length < 2) { last = null; continue; }
+    }
+    const key = matchedKeys[0] || null;
+    if (!key) {
+      // 续行：名字被折行截断时，下一行短句接在上一条名字后面（如“景山支行)”接“中国民生银行(北京石”）
+      if (last && !dm && name.length >= 2 && name.length <= 15 && !/路|街|号|楼|层/.test(name)) last.name += name;
+      else last = null;
+      continue;
+    }
+    if (!dm && name.length < 4) { last = null; continue; }
+    if (name.length < 2 || name.length > 30) { last = null; continue; }
     let dkm = null;
     if (dm) { const v = Number(dm[1]); const isMeter = dm[2] === "米" || dm[2].toLowerCase() === "m"; dkm = isMeter ? Math.round(v / 1000 * 100) / 100 : v; }
     const dedup = key + "|" + name;
-    if (seen.has(dedup)) continue;
+    if (seen.has(dedup)) { last = null; continue; }
     seen.add(dedup);
-    out.push({ key, name, distanceKm: dkm });
+    const entry = { key, name, distanceKm: dkm };
+    out.push(entry);
+    last = entry;
   }
   return out;
 }
@@ -2940,7 +2958,10 @@ function openOcrPreview(parsed, target){
     }
     if (parts.length) amenHTML = `<div style="margin-top:14px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">配套（按分类，勾选的填入对应配套编辑区）</div>${parts.join("")}</div>`;
   }
-  if (!rows.length && !amenHTML) { toast("没识别出能填的字段，换张更清晰的截图试试"); return; }
+  if (!rows.length && !amenHTML) {
+    if (target === "listing" && lastOcrAmenities.length) { toast(`这张图里没有房源字段，但识别到 ${lastOcrAmenities.length} 处配套，配套请到小区表单里识别填入`); return; }
+    toast("没识别出能填的字段，换张更清晰的截图试试"); return;
+  }
   const body = rows.map(([k, f]) => {
     const el = document.getElementById(map[k]);
     const cur = el ? el.value : "";
