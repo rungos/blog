@@ -266,6 +266,7 @@
   .amen-name{flex:1; min-width:0; word-break:break-word; color:var(--text)}
   .amen-note{color:var(--muted); font-size:12.5px}
   .amen-d{flex:none; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums}
+  .amen-group-h{margin:14px 0 2px; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.08em}
   .amen-more{display:inline-block; margin-top:7px; padding:0; background:none; border:none; font-size:13px; color:var(--ink); cursor:pointer}
   .notes-txt{white-space:pre-wrap; word-break:break-word; font-size:14px; color:var(--text); padding-bottom:10px; border-bottom:1px solid var(--line)}
   .lsec-body{border-bottom:1px solid var(--line)}
@@ -719,16 +720,37 @@
         <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">平时和早高峰是两套开车数据，导入包会覆盖，筛的时候以当前库里的数据为准。</p>
       </div>
       <div class="req-sec"><h4>4 · 周边配套（距离上限，公里）</h4>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">交通</div>
         <div class="req-grid">
-          <label>地铁<input type="number" id="a-subway-max" min="0" step="0.1"></label>
-          <label>公交<input type="number" id="a-bus-max" min="0" step="0.1"></label>
+          <label>地铁站<input type="number" id="a-subway-max" min="0" step="0.1"></label>
+          <label>公交站<input type="number" id="a-bus-max" min="0" step="0.1"></label>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin:12px 0 6px">医疗</div>
+        <div class="req-grid">
           <label>医院<input type="number" id="a-hosp-max" min="0" step="0.1"></label>
-          <label>公园<input type="number" id="a-park-max" min="0" step="0.1"></label>
+          <label>药店<input type="number" id="a-pharm-max" min="0" step="0.1"></label>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin:12px 0 6px">购物</div>
+        <div class="req-grid">
           <label>商场<input type="number" id="a-mall-max" min="0" step="0.1"></label>
           <label>超市<input type="number" id="a-super-max" min="0" step="0.1"></label>
-          <label>休闲<input type="number" id="a-leisure-max" min="0" step="0.1"></label>
+          <label>市场<input type="number" id="a-market-max" min="0" step="0.1"></label>
         </div>
-        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">学校（有即算）</div><div class="req-checks" id="a-schools">
+        <div style="font-size:13px;color:var(--muted);margin:12px 0 6px">生活</div>
+        <div class="req-grid">
+          <label>银行<input type="number" id="a-bank-max" min="0" step="0.1"></label>
+          <label>ATM<input type="number" id="a-atm-max" min="0" step="0.1"></label>
+          <label>餐厅<input type="number" id="a-rest-max" min="0" step="0.1"></label>
+          <label>咖啡馆<input type="number" id="a-cafe-max" min="0" step="0.1"></label>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin:12px 0 6px">娱乐</div>
+        <div class="req-grid">
+          <label>公园<input type="number" id="a-park-max" min="0" step="0.1"></label>
+          <label>电影院<input type="number" id="a-cinema-max" min="0" step="0.1"></label>
+          <label>健身房<input type="number" id="a-gym-max" min="0" step="0.1"></label>
+          <label>体育馆<input type="number" id="a-stadium-max" min="0" step="0.1"></label>
+        </div>
+        <div style="margin-top:12px"><div style="font-size:13px;color:var(--muted);margin-bottom:6px">教育（有即算）</div><div class="req-checks" id="a-schools">
           <label><input type="checkbox" value="kindergartens">幼儿园</label><label><input type="checkbox" value="primarySchools">小学</label><label><input type="checkbox" value="middleSchools">中学</label><label><input type="checkbox" value="universities">大学</label>
         </div></div>
       </div>
@@ -1145,7 +1167,7 @@ function searchHay(h){
     if (isSet(l.totalPriceWan)) parts.push(l.totalPriceWan + "万");
     if (isSet(l.unitPrice)) parts.push(String(l.unitPrice));
   }
-  for (const k of ["subway","bus","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"]) {
+  for (const k of ["subway","bus","kindergartens","primarySchools","middleSchools","universities","hospitals","pharmacy","malls","supermarkets","markets","bank","atm","restaurant","cafe","parks","cinema","gym","stadium"]) {
     const arr = h[k];
     if (Array.isArray(arr)) for (const it of arr) if (it && it.name) parts.push(it.name);
   }
@@ -1172,8 +1194,8 @@ function cardHTML(h, showLoc, idx){
   if (isSet(h.sector)) locParts.push(h.sector);
   if (isSet(h.builtYear)) locParts.push("建于 " + h.builtYear);
   { const cp = [];
-    const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : (isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes);
-    const bMin = isSet(h.ebikeBMinutes) ? h.ebikeBMinutes : (isSet(h.driveBMinutes) ? h.driveBMinutes : h.commuteBMinutes);
+    const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : h.driveAMinutes;
+    const bMin = isSet(h.ebikeBMinutes) ? h.ebikeBMinutes : h.driveBMinutes;
     if (isSet(aMin)) cp.push("我 " + aMin + "分");
     if (isSet(bMin)) cp.push("对象 " + bMin + "分");
     if (cp.length) locParts.push((isSet(h.ebikeAMinutes) || isSet(h.ebikeBMinutes) ? "电车 " : "通勤 ") + cp.join(" · "));
@@ -1351,7 +1373,7 @@ function kv(k, v, linkifyIt){
   return `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${linkifyIt ? linkify(v) : esc(v)}</div></div>`;
 }
 /* 周边配套：细分类逐块展示（地铁/幼儿园/小学/中学/大学/医院/商场/超市/公园/休闲），每块按距离升序、默认 3 项、超出可展开 */
-const AMEN_CATS = [["subway","地铁"],["bus","公交"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
+const AMEN_GROUPS = [["交通",[["subway","地铁站"],["bus","公交站"]]],["教育",[["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"]]],["医疗",[["hospitals","医院"],["pharmacy","药店"]]],["购物",[["malls","商场"],["supermarkets","超市"],["markets","市场"]]],["生活",[["bank","银行"],["atm","ATM"],["restaurant","餐厅"],["cafe","咖啡馆"]]],["娱乐",[["parks","公园"],["cinema","电影院"],["gym","健身房"],["stadium","体育馆"]]]];
 let amenOpenCats = new Set();
 function amenDist(d){
   if (!isSet(d)) return "";
@@ -1379,7 +1401,11 @@ function amenCatBlock(key, title, arr){
 }
 function amenAreaHTML(h){
   let blocks = "";
-  for (const [key, title] of AMEN_CATS) blocks += amenCatBlock(key, title, h[key]);
+  for (const [gtitle, subs] of AMEN_GROUPS) {
+    let gb = "";
+    for (const [key, title] of subs) gb += amenCatBlock(key, title, h[key]);
+    if (gb) blocks += `<div class="amen-group-h">${esc(gtitle)}</div>${gb}`;
+  }
   return blocks ? `<section class="dsec amen-area"><h4>周边配套</h4>${blocks}</section>` : "";
 }
 function commuteLine(label, km, min){
@@ -1433,13 +1459,12 @@ function detailHTML(h){
   if (s) html += `<section class="dsec"><h4>房屋与小区</h4>${s}</section>`;
   html += listingsSectionHTML(h);
   html += mediaSectionHTML(h, "c");
+  const hasEbikeTransit = isSet(h.ebikeAMinutes) || isSet(h.ebikeBMinutes) || isSet(h.transitAMinutes) || isSet(h.transitBMinutes);
   s = "";
   s += kv("地铁距离", isSet(h.subwayKm) ? h.subwayKm+" km" : "");
   s += kv("公交距离", isSet(h.busKm) ? h.busKm+" km" : "");
-  s += commuteLine(h.commuteALabel || "通勤A", h.commuteAKm, h.commuteAMinutes);
-  s += commuteLine(h.commuteBLabel || "通勤B", h.commuteBKm, h.commuteBMinutes);
   if (s) html += `<section class="dsec"><h4>交通通勤</h4>${s}</section>`;
-  if (h.city === "北京" && (isSet(h.ebikeAMinutes) || isSet(h.ebikeBMinutes) || isSet(h.transitAMinutes) || isSet(h.transitBMinutes))) {
+  if (h.city === "北京" && hasEbikeTransit) {
     s = "";
     s += commuteLine("骑电车到通勤A", h.ebikeAKm, h.ebikeAMinutes);
     s += commuteLine("骑电车到通勤B", h.ebikeBKm, h.ebikeBMinutes);
@@ -2173,7 +2198,9 @@ $("#media-file").addEventListener("change", async e => {
       if (item) { added.push(item); batchBytes += item.size || 0; }
     } catch (err) {
       if (isBucketMissingErr(err)) { bucketMissing = true; break; }
-      toast("「" + (files[i].name || "文件") + "」上传失败：" + err.message);
+      const emsg = String((err && err.message) || err || "");
+      if (/413|maximum allowed size|maximum size exceeded/i.test(emsg)) toast("「" + (files[i].name || "文件") + "」上传失败：Supabase 免费版单文件上限 50MB，升 Pro 或把视频压到 50MB 以下再传");
+      else toast("「" + (files[i].name || "文件") + "」上传失败：" + err.message);
     }
   }
   if (bucketMissing) toast("媒体存储还没初始化，请先在 Supabase 运行 storage.sql");
@@ -2444,8 +2471,6 @@ const CMP_FIELDS = [
   ["建成年", h => h.builtYear||""],
   ["梯户比", h => h.elevatorRatio||""],
   ["地铁", h => isSet(h.subwayKm)?h.subwayKm+" km":""],
-  ["通勤A", h => isSet(h.commuteAMinutes)?h.commuteAMinutes+" 分钟":""],
-  ["通勤B", h => isSet(h.commuteBMinutes)?h.commuteBMinutes+" 分钟":""],
   ["租售比", h => h.rentSaleRatio||""],
   ["近30天成交量", h => h.transactionVolume||""],
   ["物业公司", h => h.propertyCompany||""],
@@ -2493,8 +2518,8 @@ const FORM_SECTIONS = [
   ]],
   ["交通通勤", [
     ["subwayKm","地铁距离（km）","num"], ["busKm","公交距离（km）","num"],
-    ["commuteALabel","通勤A 标签","text"], ["commuteAKm","通勤A 距离（km）","num"], ["commuteAMinutes","通勤A 时间（分钟）","num"],
-    ["commuteBLabel","通勤B 标签","text"], ["commuteBKm","通勤B 距离（km）","num"], ["commuteBMinutes","通勤B 时间（分钟）","num"],
+    ["commuteALabel","通勤A 标签","text"],
+    ["commuteBLabel","通勤B 标签","text"],
     ["ebikeAKm","电车到A 距离（km）","num"], ["ebikeAMinutes","电车到A 时间（分钟）","num"],
     ["ebikeBKm","电车到B 距离（km）","num"], ["ebikeBMinutes","电车到B 时间（分钟）","num"],
     ["transitAMinutes","公交到A 时间（分钟）","num"], ["transitBMinutes","公交到B 时间（分钟）","num"]
@@ -2514,7 +2539,7 @@ const FORM_SECTIONS = [
     ["hasGarbageStation","附近垃圾站","tri"], ["nearElevated","附近高架","tri"], ["noiseLevel","噪音","text"]
   ]]
 ];
-const AMEN_FIELDS = [["subway","地铁"],["bus","公交"],["kindergartens","幼儿园"],["primarySchools","小学"],["middleSchools","中学"],["universities","大学"],["hospitals","医院"],["malls","商场"],["supermarkets","超市"],["parks","公园"],["leisure","休闲"]];
+const AMEN_FIELDS = AMEN_GROUPS.flatMap(([, subs]) => subs);
 
 function triSel(val){ return (val===1||val===true) ? "1" : ((val===0||val===false) ? "0" : ""); }
 function fieldInput(key, label, type, val, ph, hint){
@@ -2539,10 +2564,13 @@ function fieldInput(key, label, type, val, ph, hint){
     return `<div class="fld"><label>${label}</label><select id="ef-${key}">${selOpts(key, val)}</select></div>`;
   return `<div class="fld"><label>${label}</label><input id="ef-${key}" type="${type==="num"?"number":"text"}" step="any"${ph ? ` placeholder="${esc(ph)}"` : ""} value="${esc(val)}">${hint ? `<small class="fld-hint">${esc(hint)}</small>` : ""}</div>`;
 }
-function amenEditor(key, title, arr){
+function amenEditorBody(key, arr){
   const rows = (arr||[]).map(a => amenRow(a)).join("");
-  return `<section class="fsec"><h4>${title}</h4><div id="amen-${key}">${rows}</div>
-    <button type="button" class="btn small" data-add-amen="${key}">＋ 添加一行</button></section>`;
+  return `<div id="amen-${key}">${rows}</div>
+    <button type="button" class="btn small" data-add-amen="${key}">＋ 添加一行</button>`;
+}
+function amenEditor(key, title, arr){
+  return `<section class="fsec"><h4>${title}</h4>${amenEditorBody(key, arr)}</section>`;
 }
 function amenRow(a){
   return `<div class="arr-row">
@@ -2553,7 +2581,7 @@ function amenRow(a){
 }
 function openEdit(id){
   editingId = id;
-  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], bus:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], malls:[], supermarkets:[], parks:[], leisure:[] };
+  const h = id ? byId(id) : { status:"planned", isFavorite:false, rating:null, subway:[], bus:[], kindergartens:[], primarySchools:[], middleSchools:[], universities:[], hospitals:[], pharmacy:[], malls:[], supermarkets:[], markets:[], bank:[], atm:[], restaurant:[], cafe:[], parks:[], cinema:[], gym:[], stadium:[] };
   if (!h) return;
   $("#edit-title").textContent = id ? "编辑 · " + (h.community||"") : "新增一套";
   let html = "";
@@ -2574,12 +2602,21 @@ function openEdit(id){
     hv.dealPriceMax = hv.recentDealPrice;
   }
   for (const [title, fields] of FORM_SECTIONS)
-    html += `<section class="fsec"><h4>${title}</h4><div class="fgrid">` + fields.map(([k,l,t,ph,hint]) => fieldInput(k,l,t,hv[k],ph,hint)).join("") + `</div></section>`;
-  for (const [key, title] of AMEN_FIELDS) html += amenEditor(key, title, h[key]);
+    html += `<section class="fsec"${title === "天津专用（驾车 / 高铁）" ? " data-tj-only" : ""}><h4>${title}</h4><div class="fgrid">` + fields.map(([k,l,t,ph,hint]) => fieldInput(k,l,t,hv[k],ph,hint)).join("") + `</div></section>`;
+  for (const [gtitle, subs] of AMEN_GROUPS)
+    html += `<section class="fsec"><h4>${gtitle}</h4>` + subs.map(([key, title]) => `<div style="font-size:13px;color:var(--muted);margin:12px 0 8px">${title}</div>${amenEditorBody(key, h[key])}`).join("") + `</section>`;
   html += `<section class="fsec"><h4>其他配套与备注</h4><div class="fgrid">
     ${fieldInput("otherAmenities","其他配套","text",h.otherAmenities)}
     ${fieldInput("notes","备注（收藏房源明细粘贴在此，链接会自动可点）","area",h.notes)}</div></section>`;
   $("#edit-form").innerHTML = html;
+  const tjSec = document.querySelector('#edit-form [data-tj-only]');
+  const cityEl = $("#ef-city");
+  if (tjSec && cityEl) {
+    const syncTjSec = () => { tjSec.style.display = cityEl.value.trim() === "北京" ? "none" : ""; };
+    syncTjSec();
+    cityEl.addEventListener("input", syncTjSec);
+    cityEl.addEventListener("change", syncTjSec);
+  }
   $("#rate-pick").addEventListener("click", e => {
     const b = e.target.closest("[data-rate]"); if (!b) return;
     document.querySelectorAll("#rate-pick button").forEach(x=>x.classList.toggle("on", x===b));
@@ -2678,10 +2715,10 @@ function isEmptyVal(v){ return v === null || v === undefined || v === "" || (Arr
 /* ==================== 数据完整度 ==================== */
 function completenessGroups(h){
   const L = getListings(h);
-  const amenKeys = ["subway","bus","kindergartens","primarySchools","middleSchools","universities","hospitals","malls","supermarkets","parks","leisure"];
+  const amenKeys = AMEN_FIELDS.map(([k]) => k);
   return [
     { label: "基本信息", ok: isSet(h.unitPriceMin) && isSet(h.builtYear) },
-    { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.commuteAMinutes) || isSet(h.ebikeAMinutes) || isSet(h.transitAMinutes) || isSet(h.hsrStationName) },
+    { label: "通勤", ok: isSet(h.driveAMinutes) || isSet(h.ebikeAMinutes) || isSet(h.transitAMinutes) || isSet(h.hsrStationName) },
     { label: "周边配套", ok: amenKeys.some(k => Array.isArray(h[k]) && h[k].length) },
     { label: "房源", ok: L.length > 0 },
     { label: "房源详情", ok: L.some(l => l.baths !== null && l.baths !== undefined) },
@@ -2689,16 +2726,17 @@ function completenessGroups(h){
 }
 function completenessOf(h){ return completenessGroups(h).filter(g => !g.ok).map(g => g.label); }
 
+const DROPPED_KEYS = new Set(["commuteAKm", "commuteAMinutes", "commuteBKm", "commuteBMinutes"]);
 function mergeForImport(existing, imported){
-  if (!existing) return imported;
+  if (!existing) { const c = { ...imported }; for (const k of DROPPED_KEYS) delete c[k]; return c; }
   const result = { ...existing };
   for (const [k, v] of Object.entries(imported)) {
-    if (k === "listings" || k === "_syncFav" || k === "_syncCommute") continue;
+    if (DROPPED_KEYS.has(k) || k === "listings" || k === "_syncFav" || k === "_syncCommute") continue;
     if (isEmptyVal(result[k]) && !isEmptyVal(v)) result[k] = v;
   }
   if (Object.prototype.hasOwnProperty.call(imported, "_syncFav")) result.isFavorite = imported._syncFav;
   if (imported._syncCommute) {
-    for (const k of ["driveAMinutes", "driveAKm", "driveBMinutes", "driveBKm", "commuteAMinutes", "commuteAKm", "commuteBMinutes", "commuteBKm", "commuteCaliber"]) {
+    for (const k of ["driveAMinutes", "driveAKm", "driveBMinutes", "driveBKm", "commuteCaliber"]) {
       if (!isEmptyVal(imported[k])) result[k] = imported[k];
     }
   }
@@ -2995,7 +3033,7 @@ async function initQijuMap(list){
     const wLng = parts[0], wLat = parts[1];
     pts.push([wLat, wLng]);
     const color = h.status === "viewed" ? "#2E7D32" : "#9E9E9E";
-    const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : (isSet(h.driveAMinutes) ? h.driveAMinutes : h.commuteAMinutes);
+    const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : h.driveAMinutes;
     const aMode = isSet(h.ebikeAMinutes) ? "电车A" : "通勤A";
     L.circleMarker([wLat, wLng], { radius: 8, color: h.isFavorite ? "#E60023" : "#fff", weight: h.isFavorite ? 3 : 2, fillColor: color, fillOpacity: 0.9 })
       .addTo(qijuMap)
@@ -3040,8 +3078,8 @@ async function syncReqFromCloud(){
 function commuteCands(h, dir){
   const out = [];
   const push = (v, mode) => { if (isSet(v)) out.push({ m: Number(v), mode }); };
-  if (dir === "A") { push(h.driveAMinutes, "开车"); push(h.ebikeAMinutes, "电车"); push(h.transitAMinutes, "公交"); push(h.commuteAMinutes, "开车"); }
-  else { push(h.driveBMinutes, "开车"); push(h.ebikeBMinutes, "电车"); push(h.transitBMinutes, "公交"); push(h.commuteBMinutes, "开车"); }
+  if (dir === "A") { push(h.driveAMinutes, "开车"); push(h.ebikeAMinutes, "电车"); push(h.transitAMinutes, "公交"); }
+  else { push(h.driveBMinutes, "开车"); push(h.ebikeBMinutes, "电车"); push(h.transitBMinutes, "公交"); }
   return out;
 }
 function nearestDist(h, key){
@@ -3262,7 +3300,15 @@ function advMatch(h, a){
   if (!distOk("parks", a.parkMax)) return false;
   if (!distOk("malls", a.mallMax)) return false;
   if (!distOk("supermarkets", a.superMax)) return false;
-  if (!distOk("leisure", a.leisureMax)) return false;
+  if (!distOk("pharmacy", a.pharmMax)) return false;
+  if (!distOk("markets", a.marketMax)) return false;
+  if (!distOk("bank", a.bankMax)) return false;
+  if (!distOk("atm", a.atmMax)) return false;
+  if (!distOk("restaurant", a.restMax)) return false;
+  if (!distOk("cafe", a.cafeMax)) return false;
+  if (!distOk("cinema", a.cinemaMax)) return false;
+  if (!distOk("gym", a.gymMax)) return false;
+  if (!distOk("stadium", a.stadiumMax)) return false;
   if (a.schools) for (const k of a.schools) if (!(Array.isArray(h[k]) && h[k].length)) return false;
   const miss = completenessOf(h);
   if (a.missBasic && !miss.includes("基本信息")) return false;
@@ -3338,7 +3384,15 @@ function collectAdv(){
   const pm = num("a-park-max"); if (pm !== undefined) a.parkMax = pm;
   const mm = num("a-mall-max"); if (mm !== undefined) a.mallMax = mm;
   const sp = num("a-super-max"); if (sp !== undefined) a.superMax = sp;
-  const lz = num("a-leisure-max"); if (lz !== undefined) a.leisureMax = lz;
+  const phm = num("a-pharm-max"); if (phm !== undefined) a.pharmMax = phm;
+  const mkm = num("a-market-max"); if (mkm !== undefined) a.marketMax = mkm;
+  const bkm = num("a-bank-max"); if (bkm !== undefined) a.bankMax = bkm;
+  const amm = num("a-atm-max"); if (amm !== undefined) a.atmMax = amm;
+  const rsm = num("a-rest-max"); if (rsm !== undefined) a.restMax = rsm;
+  const cfm = num("a-cafe-max"); if (cfm !== undefined) a.cafeMax = cfm;
+  const cnm = num("a-cinema-max"); if (cnm !== undefined) a.cinemaMax = cnm;
+  const gym = num("a-gym-max"); if (gym !== undefined) a.gymMax = gym;
+  const stm = num("a-stadium-max"); if (stm !== undefined) a.stadiumMax = stm;
   const sc = checkedVals("a-schools"); if (sc.length) a.schools = sc;
   const st = $("#a-status").value; if (st) a.status = st;
   const rt = num("a-rating-min"); if (rt !== undefined) a.ratingMin = rt;
