@@ -386,6 +386,7 @@
 
   /* ---------- modal (edit / compare) ---------- */
   .modal-wrap{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
+  #calc-wrap{z-index:115} /* 测算要盖过所有弹窗：它和房源详情同为 z-index 90 时，DOM 在后的详情会盖住它；115 也盖过灯箱 110，仍低于提示 120 和头像菜单 200 */
   .modal-scrim{position:absolute; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(3px)}
   .modal{background:var(--surface); border-radius:24px; box-shadow:var(--shadow-pop); position:relative; width:860px; max-width:100%; max-height:calc(100dvh - 44px); display:flex; flex-direction:column; overflow:hidden; animation:pop .2s cubic-bezier(.32,.72,.28,1)}
   @keyframes pop{from{opacity:0; transform:scale(.98)} to{opacity:1; transform:none}}
