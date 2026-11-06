@@ -141,6 +141,7 @@
   .fav-btn{position:absolute; right:12px; top:12px; width:36px; height:36px; border-radius:50%; background:#fff; color:#c9c9c9; font-size:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.14); transition:all .15s ease; z-index:2}
   .fav-btn:hover{transform:scale(1.08)}
   .fav-btn.on{background:var(--red); color:#fff}
+  .pin-favlist{position:absolute; left:12px; top:12px; width:36px; height:36px; border-radius:50%; background:#F5A623; color:#fff; font-size:17px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.14); z-index:2}
   .pin-status{position:absolute; left:12px; bottom:12px; background:rgba(255,255,255,.85); backdrop-filter:blur(4px); color:#111; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px}
   .hcard[data-status="viewed"] .pin-status{background:#2E7D32; color:#fff}
   body:not(.mode-lfav) .dd-wrap:has(> select.lfav-only){display:none}
@@ -355,6 +356,16 @@
   .fav-owner{font-size:13px; color:var(--muted); margin:0 2px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:20px; min-height:20px; flex:none}
   .fav-owner b{color:var(--ink); font-weight:600; font-size:13.5px}
   .fav-item .lcard{margin-bottom:0; flex:1}
+  /* ---------- 临时待看 ---------- */
+  .temp-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:4px 2px 14px; font-size:13px; color:var(--muted)}
+  .temp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr)); gap:18px; align-items:stretch}
+  .temp-item{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; display:flex; flex-direction:column; gap:6px}
+  .temp-item .t-title{font-size:15.5px; font-weight:700; color:var(--ink)}
+  .temp-item .t-meta{font-size:13px; color:var(--muted); line-height:1.6}
+  .temp-item .t-note{font-size:12.5px; color:var(--muted)}
+  .temp-item .t-foot{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px}
+  .temp-item .t-date{font-size:12px; color:var(--muted)}
+  .temp-item .t-actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
   .dd-wrap.dd-off{opacity:.45; pointer-events:none}
   /* ---------- floor plan (户型图) ---------- */
   .lcard{display:flex; gap:12px}
@@ -518,6 +529,7 @@
         <button class="mchip" data-tab="planned">待看</button>
         <button class="mchip" data-tab="fav">关注小区</button>
         <button class="mchip" data-tab="lfav">★ 关注房源</button>
+      <button class="mchip" data-tab="temp">临时待看</button>
       <button class="mchip" data-tab="map">地图</button>
       <button class="mchip" data-tab="match">匹配</button>
       </div>
@@ -526,6 +538,7 @@
         <select class="pillsel" id="f-district"></select>
         <select class="pillsel" id="f-sector"></select>
         <select class="pillsel" id="f-sort">
+          <option value="favfirst">收藏优先</option>
           <option value="default">默认排序</option>
           <option value="unitPrice">单价从低到高</option>
           <option value="rating">评分从高到低</option>
@@ -613,6 +626,32 @@
       <button class="btn" data-close-listing>取消</button>
       <button class="btn primary" id="btn-listing-save">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= 临时待看弹窗 ================= -->
+<div class="modal-wrap hidden" id="temp-wrap">
+  <div class="modal-scrim" data-close-temp></div>
+  <div class="modal" style="width:640px">
+    <div class="modal-head"><h2 id="temp-title">添加临时待看</h2><button class="modal-close" data-close-temp>✕</button></div>
+    <div class="modal-body"><form id="temp-form">
+      <div class="fld" style="margin-bottom:6px"><label>粘贴贝壳分享文字（先粘贴，再点解析）</label><textarea id="tw-paste" rows="2" placeholder="如：七星园，2居，76.68㎡，285万，低楼层/19层，西南，详情：https://…"></textarea></div>
+      <div style="margin:0 0 12px"><button class="btn small" id="btn-temp-parse" type="button">解析并填入</button></div>
+      <div class="fgrid">
+        <div class="fld"><label>小区名 *</label><input id="tw-community" type="text"></div>
+        <div class="fld"><label>朝向</label><input id="tw-orientation" type="text" placeholder="如 西南"></div>
+        <div class="fld"><label>室</label><input id="tw-rooms" type="number" step="any"></div>
+        <div class="fld"><label>厅</label><input id="tw-halls" type="number" step="any"></div>
+        <div class="fld"><label>面积（㎡）</label><input id="tw-areaSqm" type="number" step="any"></div>
+        <div class="fld"><label>总价（万）</label><input id="tw-totalPriceWan" type="number" step="any"></div>
+        <div class="fld"><label>单价（元/㎡）</label><input id="tw-unitPrice" type="number" step="any"></div>
+        <div class="fld"><label>楼层</label><input id="tw-floorText" type="text" placeholder="如 低楼层/19层"></div>
+        <div class="fld"><label>总层数</label><input id="tw-totalFloors" type="number" step="any"></div>
+        <div class="fld full"><label>贝壳链接</label><input id="tw-url" type="text" placeholder="https://…"></div>
+        <div class="fld full"><label>备注 / 来源</label><input id="tw-note" type="text" placeholder="如 来自【贝壳找房APP】"></div>
+      </div>
+    </form></div>
+    <div class="modal-foot"><button class="btn" data-close-temp>取消</button><button class="btn primary" id="btn-temp-save">保存</button></div>
   </div>
 </div>
 
@@ -950,7 +989,19 @@ function groupHouses(list){
   }
   return [...groups.entries()];
 }
+function hasFavListing(h){ return getListings(h).some(l => l.isFavorite); }
 function sortHouses(list, sort){
+  if (sort === "favfirst") {
+    const idx = new Map(list.map((h, i) => [h.id, i]));
+    return list.slice().sort((a, b) => {
+      if (!!a.isFavorite !== !!b.isFavorite) return a.isFavorite ? -1 : 1;
+      const fa = hasFavListing(a), fb = hasFavListing(b);
+      if (fa !== fb) return fa ? -1 : 1;
+      const ra = a.rating || 0, rb = b.rating || 0;
+      if (ra !== rb) return rb - ra;
+      return (idx.get(a.id) ?? 0) - (idx.get(b.id) ?? 0);
+    });
+  }
   const key = { unitPrice: h => { const [a] = listUnitRange(h); return isSet(a) ? Number(a) : Infinity; },
                 rating: h => -(h.rating||0),
                 builtYear: h => -(h.builtYear||0) }[sort];
@@ -977,6 +1028,7 @@ if (SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE")) {
 let houses = [];
 let curTab = "all";
 let viewMode = "houses";
+let lastSortBeforeLfav = null;
 let collapsed = new Set();
 let compareSet = new Set();
 let detailId = null;
@@ -1004,6 +1056,7 @@ function enterApp(){
   }
   refreshTopbarAvatar();
   syncReqFromCloud();
+  syncTempFromCloud();
   loadHouses();
 }
 $("#login-form").addEventListener("submit", async (e) => {
@@ -1094,14 +1147,14 @@ $("#search").addEventListener("input", renderList);
 function activeFilters(){
   const f = { city: $("#f-city").value, district: $("#f-district").value, sector: $("#f-sector").value,
               sort: $("#f-sort").value, q: $("#search").value.trim() };
-  f.any = !!(f.city || f.district || f.sector || f.q || f.sort !== "default");
+  f.any = !!(f.city || f.district || f.sector || f.q || (f.sort !== "default" && f.sort !== "favfirst"));
   return f;
 }
 function clearFilters(){
   $("#f-city").value = ""; buildDistrictOptions();
   $("#f-district").value = ""; buildSectorOptions();
   $("#f-sector").value = "";
-  $("#f-sort").value = "default"; $("#search").value = "";
+  $("#f-sort").value = "favfirst"; $("#search").value = "";
   adv = {}; resetAdvForm();
   renderList();
 }
@@ -1114,7 +1167,7 @@ function renderFilterSummary(){
   if (f.district) parts.push(f.district);
   if (f.sector) parts.push(f.sector);
   if (f.q) parts.push("搜索「" + f.q + "」");
-  if (f.sort !== "default") parts.push("已排序");
+  if (f.sort !== "default" && f.sort !== "favfirst") parts.push("已排序");
   if (advAny()) parts.push("高级筛选");
   box.innerHTML = `<span>当前筛选</span>` + parts.map(p => `<span class="chip-x">${esc(p)}</span>`).join("") + `<button id="fs-clear">清除全部</button>`;
   box.classList.remove("hidden");
@@ -1123,10 +1176,12 @@ function renderFilterSummary(){
 
 
 /* ==================== 页签 ==================== */
-const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源", map: "地图视图", match: "匹配结果", profile: "个人信息" };
+const TAB_TITLES = { all: "全部房源", viewed: "已看房源", planned: "待看房源", fav: "关注小区", lfav: "关注房源", temp: "临时待看", map: "地图视图", match: "匹配结果", profile: "个人信息" };
 function setTab(tab){
   if (tab === "lfav") {
     viewMode = (viewMode === "lfav") ? "houses" : "lfav";
+  } else if (tab === "temp") {
+    viewMode = (viewMode === "temp") ? "houses" : "temp";
   } else if (tab === "map") {
     viewMode = (viewMode === "map") ? "houses" : "map";
   } else if (tab === "match") {
@@ -1138,16 +1193,17 @@ function setTab(tab){
     curTab = tab;
   }
   const sortSel = $("#f-sort");
-  if (viewMode === "lfav") sortSel.value = "default";
+  if (viewMode === "lfav") { if (sortSel.value !== "default") lastSortBeforeLfav = sortSel.value; sortSel.value = "default"; }
+  else if (lastSortBeforeLfav) { sortSel.value = lastSortBeforeLfav; lastSortBeforeLfav = null; }
   document.body.classList.toggle("mode-lfav", viewMode === "lfav");
   sortSel.disabled = (viewMode !== "houses");
   const ddWrap = sortSel.closest(".dd-wrap");
   if (ddWrap) ddWrap.classList.toggle("dd-off", viewMode !== "houses");
   document.querySelectorAll("#mobile-chips .mchip").forEach(b => {
     const t = b.dataset.tab;
-    b.classList.toggle("active", t === "lfav" ? viewMode === "lfav" : (t === "map" ? viewMode === "map" : (t === "match" ? viewMode === "match" : (viewMode === "houses" && t === curTab))));
+    b.classList.toggle("active", t === "temp" ? viewMode === "temp" : (t === "lfav" ? viewMode === "lfav" : (t === "map" ? viewMode === "map" : (t === "match" ? viewMode === "match" : (viewMode === "houses" && t === curTab)))));
   });
-  $("#page-title").textContent = viewMode === "lfav" ? TAB_TITLES.lfav : (viewMode === "map" ? TAB_TITLES.map : (viewMode === "match" ? TAB_TITLES.match : (viewMode === "profile" ? TAB_TITLES.profile : (TAB_TITLES[curTab] || "全部房源"))));
+  $("#page-title").textContent = viewMode === "temp" ? TAB_TITLES.temp : (viewMode === "lfav" ? TAB_TITLES.lfav : (viewMode === "map" ? TAB_TITLES.map : (viewMode === "match" ? TAB_TITLES.match : (viewMode === "profile" ? TAB_TITLES.profile : (TAB_TITLES[curTab] || "全部房源")))));
   renderStats();
   renderList();
 }
@@ -1163,6 +1219,12 @@ function lfavStats(){
   return { n: rows.length, comms: new Set(rows.map(r => r.h.id)).size, total };
 }
 function renderStats(){
+  const tempChip = document.querySelector('#mobile-chips [data-tab="temp"]');
+  if (tempChip) tempChip.textContent = tempWatch.length ? `临时待看 ${tempWatch.length}` : "临时待看";
+  if (viewMode === "temp") {
+    $("#subline").textContent = `共 ${tempWatch.length} 条临时待看 · 点「转入房源」可补进小区`;
+    return;
+  }
   if (viewMode === "lfav") {
     const st = lfavStats();
     $("#subline").textContent = `共 ${st.n} 套关注房源 · 来自 ${st.comms} 个小区`;
@@ -1176,7 +1238,7 @@ function renderStats(){
 
 /* ==================== 列表渲染（瀑布流 Pin 卡） ==================== */
 function searchHay(h){
-  const parts = [h.community || "", h.notes || "", h.city || "", h.district || "", h.sector || ""];
+  const parts = [h.community || "", h.notes || "", h.city || "", h.district || "", h.sector || "", h.ring || ""];
   for (const l of getListings(h)) {
     try { const lay = listingLayoutStr(l); if (lay) parts.push(lay); } catch {}
     parts.push(l.orientation || "", l.decoration || "", l.floorText || "", l.houseType || "", l.ownership || "", l.houseAge || "", l.mortgage || "", l.note || "");
@@ -1209,6 +1271,7 @@ function cardHTML(h, showLoc, idx){
   if (showLoc && isSet(h.city)) locParts.push(h.city);
   if (isSet(h.district)) locParts.push(h.district);
   if (isSet(h.sector)) locParts.push(h.sector);
+  if (isSet(h.ring)) locParts.push(h.ring);
   if (isSet(h.builtYear)) locParts.push("建于 " + h.builtYear);
   { const cp = [];
     const aMin = isSet(h.ebikeAMinutes) ? h.ebikeAMinutes : h.driveAMinutes;
@@ -1227,6 +1290,7 @@ function cardHTML(h, showLoc, idx){
       <span class="pin-status">${h.status === "viewed" ? "已看" : "待看"}</span>
       ${(function(){ const m = completenessOf(h); return m.length ? `<span class="pin-miss">待补 ${m.length} 项</span>` : ""; })()}
       <button class="fav-btn ${h.isFavorite ? "on" : ""}" data-act="fav" title="关注">${h.isFavorite ? "♥" : "♡"}</button>
+      ${hasFavListing(h) ? `<span class="pin-favlist" title="有收藏房源">★</span>` : ""}
       <button class="cmp-btn ${inCmp ? "on" : ""}" data-act="cmp" title="加入对比">${inCmp ? "✓" : "＋"}</button>
     </div>
     <div class="pin-body">
@@ -1278,7 +1342,7 @@ function favListingRows(){
   return rows;
 }
 function favCardHTML(h, l, showOwner){
-  const locParts = [h.city, h.district, h.sector].filter(isSet);
+  const locParts = [h.city, h.district, h.sector, h.ring].filter(isSet);
   const loc = locParts.length ? `<span> · ${esc(locParts.join(" · "))}</span>` : "";
   const owner = `<div class="fav-owner">${showOwner === false ? "" : `<b>${esc(h.community || "（未命名）")}</b>${loc}`}</div>`;
   return `<div class="fav-item" data-fav-house="${h.id}">${owner}${listingCardHTML(l)}</div>`;
@@ -1305,6 +1369,7 @@ function renderList(){
   const list = filteredHouses();
   const main = $("#list-main");
   if (viewMode === "lfav") { renderFavListings(main); updateCompareBar(); return; }
+  if (viewMode === "temp") { renderTemp(main); updateCompareBar(); return; }
   if (viewMode === "match") { renderMatch(main); updateCompareBar(); window.scrollTo(0, 0); return; }
   if (viewMode === "profile") { renderProfile(main); updateCompareBar(); window.scrollTo(0, 0); return; }
   if (viewMode === "map") {
@@ -1324,7 +1389,8 @@ function renderList(){
     const items = f.sort !== "default" ? sortHouses(list, f.sort) : list;
     main.innerHTML = `<div class="group"><div class="masonry">${items.map((h, i) => cardHTML(h, true, i)).join("")}</div></div>`;
   } else {
-    main.innerHTML = groupHouses(list).map(([key, items]) => {
+    const sorted = f.sort !== "default" ? sortHouses(list, f.sort) : list;
+    main.innerHTML = groupHouses(sorted).map(([key, items]) => {
       const isCol = collapsed.has(key);
       return `<section class="group">
         <button class="group-head ${isCol ? "closed" : ""}" data-group="${esc(key)}"><span class="t">${esc(key)}</span><span class="cnt">${items.length} 套</span><span class="chev">▾</span></button>
@@ -1434,7 +1500,7 @@ function commuteLine(label, km, min){
 }
 function detailHTML(h){
   const name = h.community || "（未命名）";
-  const locLine = [h.city, h.district, h.sector].filter(isSet).join(" · ");
+  const locLine = [h.city, h.district, h.sector, h.ring].filter(isSet).join(" · ");
   let html = `<div class="detail-visual g${gradIdx(h.community)}">
       <span class="dv-char">${esc(name.trim().charAt(0) || "房")}</span>
       <span class="dv-status">${h.status==="viewed"?"已看":"待看"}</span>
@@ -1857,13 +1923,15 @@ $("#btn-listing-save").addEventListener("click", async () => {
       if (trash.length) removeMediaFiles([...new Set(trash)]);
     }
     closeListing();
+    const promotedTemp = !!tempPromoteId;
+    if (tempPromoteId) { const tid = tempPromoteId; tempPromoteId = null; tempWatch = tempWatch.filter(x => x.id !== tid); saveTemp(); }
     rerenderDrawer(h);
     if (reopenListingAfterSave && String(reopenListingAfterSave.houseId) === String(h.id)) {
       const rc = reopenListingAfterSave; reopenListingAfterSave = null;
       if (getListings(h).some(x => String(x.id) === String(rc.listingId))) openListingDetail(rc.houseId, rc.listingId);
     }
     renderStats(); renderList();
-    toast("房源已保存");
+    toast(promotedTemp ? "已转入「" + (h.community || "") + "」的房源" : "房源已保存");
   } catch (err) {
     h.listings = oldList;
     toast("保存失败：" + err.message);
@@ -2517,7 +2585,7 @@ function renderCompare(){
 const FORM_SECTIONS = [
   ["基本", [
     ["status","状态","status"], ["community","小区名","text"], ["city","城市","text"],
-    ["district","区","text"], ["sector","板块/片区","text"]
+    ["district","区","text"], ["sector","板块/片区","text"], ["ring","几环","text","如 四环"]
   ]],
   ["价格", [
     ["listUnitPriceMin","挂牌均价最低（万/㎡）","num"], ["listUnitPriceMax","挂牌均价最高（万/㎡）","num"],
@@ -3451,6 +3519,192 @@ async function syncReqFromCloud(){
     }
     if (viewMode === "match") renderList();
   } catch {}
+}
+/* ==================== 临时待看 ==================== */
+const TEMP_KEY = "qiju_tempwatch_v1";
+const TEMP_SEED_FLAG = "qiju_temp_seed_v1";
+/* 七星园是用户 2026-11-07 给的第一条临时待看：2居 76.68㎡ 285万，低楼层/19层，西南；
+   原信息里的“37”按单价约 3.7 万/㎡理解，单价由 285万÷76.68㎡ 算得 37167 元/㎡ */
+const TEMP_SEED = { community: "七星园", rooms: 2, halls: null, areaSqm: 76.68, totalPriceWan: 285, unitPrice: 37167, floorText: "低楼层/19层", totalFloors: 19, orientation: "西南", url: "https://m.ke.com/bj/ershoufang/101140349008.html?shareSource=beike_app", note: "来自【贝壳找房APP】" };
+function loadTemp(){ try { const v = JSON.parse(localStorage.getItem(TEMP_KEY) || "null"); return Array.isArray(v) ? v : []; } catch { return []; } }
+let tempWatch = loadTemp();
+let tempPromoteId = null;
+let tempCtx = null;
+async function saveTemp(){
+  try { localStorage.setItem(TEMP_KEY, JSON.stringify(tempWatch)); } catch {}
+  try {
+    if (!sb) return false;
+    const { error } = await sb.auth.updateUser({ data: { tempWatch } });
+    if (error) throw error;
+    return true;
+  } catch { return false; }
+}
+async function syncTempFromCloud(){
+  try {
+    if (!sb) return;
+    const { data } = await sb.auth.getUser();
+    const cloud = data.user?.user_metadata?.tempWatch;
+    if (Array.isArray(cloud)) {
+      tempWatch = cloud;
+      try { localStorage.setItem(TEMP_KEY, JSON.stringify(tempWatch)); } catch {}
+    } else {
+      const local = loadTemp();
+      if (local.length) {
+        tempWatch = local;
+        try { await sb.auth.updateUser({ data: { tempWatch } }); } catch {}
+      }
+    }
+    if (viewMode === "temp") renderList();
+  } catch {}
+}
+function parseTempShare(text){
+  const t = String(text || "");
+  const out = {};
+  const urlM = t.match(/https?:\/\/[^\s"'）】，,。；;、]+/);
+  if (urlM) out.url = urlM[0];
+  const areaM = t.match(/(\d+(?:\.\d+)?)\s*(?:㎡|平米|平方米)/);
+  if (areaM) out.areaSqm = Number(areaM[1]);
+  const totalM = t.match(/(\d+(?:\.\d+)?)\s*万(?![\/㎡])/);
+  if (totalM) out.totalPriceWan = Number(totalM[1]);
+  const roomM = t.match(/(\d+)\s*室\s*(\d+)\s*厅/);
+  if (roomM) { out.rooms = Number(roomM[1]); out.halls = Number(roomM[2]); }
+  else { const juM = t.match(/(\d+)\s*居/); if (juM) out.rooms = Number(juM[1]); }
+  const flM = t.match(/(低楼层|中楼层|高楼层|底层|顶层)[\/／]?(?:共)?(\d+)?\s*层/);
+  if (flM) { out.floorText = flM[1] + (flM[2] ? "/" + flM[2] + "层" : ""); if (flM[2]) out.totalFloors = Number(flM[2]); }
+  const orM = t.match(/(东南|西南|东北|西北|南北|东西|东|南|西|北)(?=[，,、\s通朝向]|$)/);
+  if (orM) out.orientation = orM[1];
+  const head = t.split(/(\d+\s*居|\d+\s*室|\d+(?:\.\d+)?\s*㎡)/)[0] || "";
+  const cand = head.split(/[，,、\n]/).map(x => x.trim()).filter(x => x && !/^(详情|来自|分享|贝壳)/.test(x));
+  if (cand.length) out.community = cand[cand.length - 1].replace(/[【】]/g, "");
+  if (out.totalPriceWan && out.areaSqm) out.unitPrice = Math.round(out.totalPriceWan * 10000 / out.areaSqm);
+  return out;
+}
+function tempEmptyHTML(){
+  return `<div class="empty"><span class="big">⌂</span>还没有临时待看<div style="font-size:13px;margin-top:6px">看到中意的房源先记进来，确认后再转入小区房源</div><div style="margin-top:14px"><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div></div>`;
+}
+function tempItemHTML(t){
+  const parts = [];
+  const lay = [(t.rooms ? t.rooms + "室" : ""), (t.halls ? t.halls + "厅" : "")].filter(Boolean).join("");
+  if (lay) parts.push(lay);
+  if (isSet(t.areaSqm)) parts.push(t.areaSqm + "㎡");
+  if (isSet(t.totalPriceWan)) parts.push(t.totalPriceWan + "万");
+  if (isSet(t.unitPrice)) parts.push("单价 " + fmtNum(t.unitPrice) + " 元/㎡");
+  if (t.floorText) parts.push(t.floorText);
+  if (t.orientation) parts.push(t.orientation + "向");
+  const date = t.createdAt ? String(t.createdAt).slice(0, 10) : "";
+  return `<div class="temp-item">
+    <div class="t-title">${esc(t.community || "（未命名）")}</div>
+    <div class="t-meta">${parts.length ? esc(parts.join(" · ")) : "信息待补充"}</div>
+    ${t.note ? `<div class="t-note">${esc(t.note)}</div>` : ""}
+    <div class="t-foot"><span class="t-date">${esc(date)}</span><span class="t-actions">
+      ${t.url ? `<a class="btn small" href="${esc(t.url)}" target="_blank" rel="noopener">查看贝壳 ↗</a>` : ""}
+      <button class="btn small primary" data-temp-act="promote" data-temp-id="${t.id}">转入房源</button>
+      <button class="btn small" data-temp-act="edit" data-temp-id="${t.id}">编辑</button>
+      <button class="btn small danger" data-temp-act="del" data-temp-id="${t.id}">删除</button>
+    </span></div>
+  </div>`;
+}
+function renderTemp(main){
+  if (!tempWatch.length && !localStorage.getItem(TEMP_SEED_FLAG)) {
+    try { localStorage.setItem(TEMP_SEED_FLAG, "1"); } catch {}
+    main.innerHTML = tempEmptyHTML();
+    openTempForm(null, TEMP_SEED);
+    return;
+  }
+  if (!tempWatch.length) { main.innerHTML = tempEmptyHTML(); return; }
+  const items = tempWatch.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  main.innerHTML = `<div class="temp-head"><span>共 ${tempWatch.length} 条 · 先记下来，确认后再转入房源</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>
+  <div class="temp-grid">${items.map(tempItemHTML).join("")}</div>`;
+}
+function openTempForm(id, prefill){
+  const t = id ? tempWatch.find(x => x.id === id) : null;
+  const v = t || prefill || {};
+  tempCtx = { id: t ? t.id : null };
+  $("#temp-title").textContent = t ? "编辑临时待看" : "添加临时待看";
+  const set = (sel, val) => { const el = $(sel); if (el) el.value = (val === null || val === undefined) ? "" : val; };
+  set("#tw-community", v.community); set("#tw-rooms", v.rooms); set("#tw-halls", v.halls);
+  set("#tw-areaSqm", v.areaSqm); set("#tw-totalPriceWan", v.totalPriceWan); set("#tw-unitPrice", v.unitPrice);
+  set("#tw-floorText", v.floorText); set("#tw-totalFloors", v.totalFloors); set("#tw-orientation", v.orientation);
+  set("#tw-url", v.url); set("#tw-note", v.note); set("#tw-paste", "");
+  $("#temp-wrap").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
+function closeTemp(){
+  $("#temp-wrap").classList.add("hidden");
+  tempCtx = null;
+  if (!$("#drawer").classList.contains("open") && $("#edit-wrap").classList.contains("hidden") && $("#cmp-wrap").classList.contains("hidden") && $("#listing-wrap").classList.contains("hidden") && $("#ldetail-wrap").classList.contains("hidden")) document.body.classList.remove("locked");
+}
+document.querySelectorAll("[data-close-temp]").forEach(el => el.addEventListener("click", closeTemp));
+$("#temp-form").addEventListener("submit", e => e.preventDefault());
+$("#btn-temp-parse").addEventListener("click", () => {
+  const raw = $("#tw-paste").value;
+  if (!raw.trim()) { toast("先粘贴贝壳分享的文字"); return; }
+  const p = parseTempShare(raw);
+  const set = (sel, val) => { const el = $(sel); if (el && el.value.trim() === "" && val !== undefined && val !== null && val !== "") el.value = val; };
+  set("#tw-community", p.community); set("#tw-rooms", p.rooms); set("#tw-halls", p.halls);
+  set("#tw-areaSqm", p.areaSqm); set("#tw-totalPriceWan", p.totalPriceWan); set("#tw-unitPrice", p.unitPrice);
+  set("#tw-floorText", p.floorText); set("#tw-totalFloors", p.totalFloors); set("#tw-orientation", p.orientation);
+  set("#tw-url", p.url);
+  toast("已按分享文字填入，核对一下再保存");
+});
+$("#btn-temp-save").addEventListener("click", async () => {
+  if (!tempCtx) return;
+  const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v); };
+  const txt = id => $(id).value.trim();
+  const community = txt("#tw-community");
+  if (!community) { toast("小区名不能为空"); return; }
+  const data = { community, rooms: num("#tw-rooms"), halls: num("#tw-halls"), areaSqm: num("#tw-areaSqm"), totalPriceWan: num("#tw-totalPriceWan"), unitPrice: num("#tw-unitPrice"), floorText: txt("#tw-floorText"), totalFloors: num("#tw-totalFloors"), orientation: txt("#tw-orientation"), url: txt("#tw-url"), note: txt("#tw-note") };
+  if (tempCtx.id) { const t = tempWatch.find(x => x.id === tempCtx.id); if (t) Object.assign(t, data); }
+  else tempWatch.push({ id: "t" + Date.now() + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString(), ...data });
+  const ok = await saveTemp();
+  closeTemp();
+  if (viewMode === "temp") renderList(); else renderStats();
+  toast(ok ? "已保存（已同步到云端）" : "已保存在本机，云端同步失败，联网后重新保存一次");
+});
+$("#list-main").addEventListener("click", e => {
+  const ta = e.target.closest("[data-temp-act]");
+  if (!ta) return;
+  const act = ta.dataset.tempAct, id = ta.dataset.tempId;
+  if (act === "add") openTempForm(null, null);
+  else if (act === "edit") openTempForm(id, null);
+  else if (act === "del") {
+    const t = tempWatch.find(x => x.id === id); if (!t) return;
+    if (!confirm("确定删除这条临时待看？")) return;
+    tempWatch = tempWatch.filter(x => x.id !== id);
+    saveTemp(); renderList(); toast("已删除");
+  }
+  else if (act === "promote") promoteTemp(id);
+});
+function cityFromBeikeUrl(url){
+  if (!url) return "";
+  if (/\/tj\//.test(url)) return "天津";
+  if (/\/bj\//.test(url)) return "北京";
+  return "";
+}
+function promoteTemp(id){
+  const t = tempWatch.find(x => x.id === id); if (!t) return;
+  const city = cityFromBeikeUrl(t.url);
+  const cands = houses.filter(h => (h.community || "").trim() === (t.community || "").trim());
+  const h = cands.find(x => city && x.city === city) || cands[0];
+  if (!h) {
+    openEdit(null);
+    const ce = $("#ef-community"); if (ce) ce.value = t.community || "";
+    const ci = $("#ef-city"); if (ci) { ci.value = city || ""; ci.dispatchEvent(new Event("input")); }
+    toast("台账里还没有「" + (t.community || "") + "」，先建小区，保存后再回来点「转入房源」");
+    return;
+  }
+  tempPromoteId = t.id;
+  openListingForm(h.id, null);
+  prefillListingForm(t);
+}
+function prefillListingForm(t){
+  const set = (sel, val) => { const el = $(sel); if (el && val !== undefined && val !== null && val !== "") el.value = val; };
+  set("#lf-rooms", t.rooms); set("#lf-halls", t.halls); set("#lf-areaSqm", t.areaSqm);
+  set("#lf-totalPriceWan", t.totalPriceWan); set("#lf-unitPrice", t.unitPrice);
+  set("#lf-floorText", t.floorText); set("#lf-totalFloors", t.totalFloors);
+  set("#lf-orientation", t.orientation); set("#lf-url", t.url);
+  const src = $("#lf-source"); if (src) src.value = "beike";
+  const nt = $("#lf-note"); if (nt && !nt.value.trim() && t.note) nt.value = t.note;
 }
 function commuteCands(h, dir){
   const out = [];
