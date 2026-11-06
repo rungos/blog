@@ -140,6 +140,7 @@
   .g4{background:linear-gradient(135deg,#fcd34d,#fdba74)} .g5{background:linear-gradient(135deg,#fda4af,#f9a8d4)}
   .fav-btn{position:absolute; right:56px; top:12px; width:36px; height:36px; border-radius:50%; background:#fff; color:#c9c9c9; font-size:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.14); transition:all .15s ease; z-index:2}
   .fav-btn:hover{transform:scale(1.08)}
+  .fav-btn.solo{right:12px}
   .fav-btn.on{background:var(--red); color:#fff}
   .pin-favlist{position:absolute; right:12px; top:12px; width:36px; height:36px; border-radius:50%; background:#F5A623; color:#fff; font-size:17px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.14); z-index:2}
   .pin-status{position:absolute; left:12px; bottom:12px; background:rgba(255,255,255,.85); backdrop-filter:blur(4px); color:#111; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px}
@@ -360,11 +361,12 @@
   .temp-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:4px 2px 14px; font-size:13px; color:var(--muted)}
   .temp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr)); gap:18px; align-items:stretch}
   .temp-item{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; display:flex; flex-direction:column; gap:6px}
-  .temp-item .t-title{font-size:15.5px; font-weight:700; color:var(--ink)}
+  .temp-item .t-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+  .temp-item .t-title{font-size:15.5px; font-weight:700; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .temp-item .t-meta{font-size:13px; color:var(--muted); line-height:1.6}
   .temp-item .t-note{font-size:12.5px; color:var(--muted)}
-  .temp-item .t-foot{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px}
-  .temp-item .t-date{font-size:12px; color:var(--muted)}
+  .temp-item .t-foot{display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:6px}
+  .temp-item .t-date{font-size:12px; color:var(--muted); white-space:nowrap; flex:none}
   .temp-item .t-actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
   .dd-wrap.dd-off{opacity:.45; pointer-events:none}
   /* ---------- floor plan (户型图) ---------- */
@@ -1225,7 +1227,7 @@ function renderStats(){
   const tempChip = document.querySelector('#mobile-chips [data-tab="temp"]');
   if (tempChip) tempChip.textContent = tempWatch.length ? `临时待看 ${tempWatch.length}` : "临时待看";
   if (viewMode === "temp") {
-    $("#subline").textContent = `共 ${tempWatch.length} 条临时待看 · 点「转入房源」可补进小区`;
+    $("#subline").textContent = "";
     return;
   }
   if (viewMode === "lfav") {
@@ -1292,7 +1294,7 @@ function cardHTML(h, showLoc, idx){
       <span class="band-char">${esc(first)}</span>
       <span class="pin-status">${h.status === "viewed" ? "已看" : "待看"}</span>
       ${(function(){ const m = completenessOf(h); return m.length ? `<span class="pin-miss">待补 ${m.length} 项</span>` : ""; })()}
-      <button class="fav-btn ${h.isFavorite ? "on" : ""}" data-act="fav" title="关注">${h.isFavorite ? "♥" : "♡"}</button>
+      <button class="fav-btn${h.isFavorite ? " on" : ""}${hasFavListing(h) ? "" : " solo"}" data-act="fav" title="关注">${h.isFavorite ? "♥" : "♡"}</button>
       ${hasFavListing(h) ? `<span class="pin-favlist" title="有收藏房源">★</span>` : ""}
       <button class="cmp-btn ${inCmp ? "on" : ""}" data-act="cmp" title="加入对比">${inCmp ? "✓" : "＋"}</button>
     </div>
@@ -3596,14 +3598,15 @@ function tempItemHTML(t){
   if (isSet(t.unitPrice)) parts.push("单价 " + fmtNum(t.unitPrice) + " 元/㎡");
   if (t.floorText) parts.push(t.floorText);
   if (t.orientation) parts.push(t.orientation + "向");
-  const date = t.createdAt ? String(t.createdAt).slice(0, 10) : "";
+  const fullDate = t.createdAt ? String(t.createdAt).slice(0, 10) : "";
+  const rel = tempRelDate(t.createdAt);
   const loc = [t.city, t.district, t.sector].filter(x => x && String(x).trim()).join(" · ");
   return `<div class="temp-item">
-    <div class="t-title">${esc(t.community || "（未命名）")}</div>
+    <div class="t-head"><span class="t-title">${esc(t.community || "（未命名）")}</span>${rel ? `<span class="t-date" title="${esc(fullDate)}">${esc(rel)}</span>` : ""}</div>
     ${loc ? `<div class="t-meta">${esc(loc)}</div>` : ""}
     <div class="t-meta">${parts.length ? esc(parts.join(" · ")) : "信息待补充"}</div>
     ${t.note ? `<div class="t-note">${esc(t.note)}</div>` : ""}
-    <div class="t-foot"><span class="t-date">${esc(date)}</span><span class="t-actions">
+    <div class="t-foot"><span class="t-actions">
       ${t.url ? `<a class="btn small" href="${esc(t.url)}" target="_blank" rel="noopener">查看贝壳 ↗</a>` : ""}
       <button class="btn small primary" data-temp-act="promote" data-temp-id="${t.id}">转入房源</button>
       <button class="btn small" data-temp-act="edit" data-temp-id="${t.id}">编辑</button>
@@ -3626,6 +3629,37 @@ function enrichTempLoc(){
   }
   if (changed) saveTemp();
 }
+function tempHay(t){
+  const parts = [t.community || "", t.city || "", t.district || "", t.sector || "", t.note || "", t.orientation || "", t.floorText || "", t.url || ""];
+  if (isSet(t.areaSqm)) parts.push(t.areaSqm + "㎡");
+  if (isSet(t.totalPriceWan)) parts.push(t.totalPriceWan + "万");
+  if (t.rooms) parts.push(t.rooms + "室");
+  if (t.halls) parts.push(t.halls + "厅");
+  return parts.join(" ");
+}
+function filteredTemp(){
+  const f = activeFilters();
+  let list = tempWatch.slice();
+  if (f.city) list = list.filter(t => (t.city || "") === f.city);
+  if (f.district) list = list.filter(t => (t.district || "") === f.district);
+  if (f.sector) list = list.filter(t => (t.sector || "") === f.sector);
+  if (f.q) list = list.filter(t => tempHay(t).includes(f.q));
+  return list;
+}
+/* 录入时间的动态显示：今天/昨天/N天前，精确日期放 title 里 */
+function tempRelDate(iso){
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const now = new Date();
+  const startOf = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.floor((startOf(now) - startOf(d)) / 86400000);
+  const md = String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if (diff <= 0) return "今天 · " + md;
+  if (diff === 1) return "昨天 · " + md;
+  if (diff < 30) return diff + "天前 · " + md;
+  return d.getFullYear() === now.getFullYear() ? md : d.getFullYear() + "-" + md;
+}
 function tempGroupKey(t){
   const p = [t.city, t.district, t.sector].filter(x => x && String(x).trim());
   return p.length ? p.join(" · ") : "待补充位置";
@@ -3639,14 +3673,18 @@ function renderTemp(main){
     return;
   }
   if (!tempWatch.length) { main.innerHTML = tempEmptyHTML(); return; }
-  const items = tempWatch.slice().sort((a, b) => {
+  const items = filteredTemp().sort((a, b) => {
     const ka = tempGroupKey(a), kb = tempGroupKey(b);
     if (ka !== kb) return ka === "待补充位置" ? 1 : kb === "待补充位置" ? -1 : ka.localeCompare(kb, "zh");
     return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
   });
+  if (!items.length) {
+    main.innerHTML = `<div class="empty"><span class="big">⌂</span>当前筛选下没有临时待看（全部共 ${tempWatch.length} 条），点顶栏「清除全部」看看全部</div>`;
+    return;
+  }
   const groups = new Map();
   for (const t of items) { const k = tempGroupKey(t); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); }
-  main.innerHTML = `<div class="temp-head"><span>共 ${tempWatch.length} 条 · 按城市 / 区域 / 板块分组</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>` +
+  main.innerHTML = `<div class="temp-head"><span>共 ${items.length} 条${items.length !== tempWatch.length ? ` · 全部 ${tempWatch.length} 条` : ""} · 按城市 / 区域 / 板块分组</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>` +
     [...groups.entries()].map(([k, ts]) => {
       const gk = "temp:" + k;
       const isCol = collapsed.has(gk);
