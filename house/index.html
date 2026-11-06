@@ -639,7 +639,9 @@
       <div style="margin:0 0 12px"><button class="btn small" id="btn-temp-parse" type="button">解析并填入</button></div>
       <div class="fgrid">
         <div class="fld"><label>小区名 *</label><input id="tw-community" type="text"></div>
-        <div class="fld"><label>朝向</label><input id="tw-orientation" type="text" placeholder="如 西南"></div>
+        <div class="fld"><label>城市</label><input id="tw-city" type="text" placeholder="如 北京"></div>
+        <div class="fld"><label>区域</label><input id="tw-district" type="text" placeholder="如 石景山区"></div>
+        <div class="fld"><label>板块</label><input id="tw-sector" type="text" placeholder="如 鲁谷"></div>
         <div class="fld"><label>室</label><input id="tw-rooms" type="number" step="any"></div>
         <div class="fld"><label>厅</label><input id="tw-halls" type="number" step="any"></div>
         <div class="fld"><label>面积（㎡）</label><input id="tw-areaSqm" type="number" step="any"></div>
@@ -647,6 +649,7 @@
         <div class="fld"><label>单价（元/㎡）</label><input id="tw-unitPrice" type="number" step="any"></div>
         <div class="fld"><label>楼层</label><input id="tw-floorText" type="text" placeholder="如 低楼层/19层"></div>
         <div class="fld"><label>总层数</label><input id="tw-totalFloors" type="number" step="any"></div>
+        <div class="fld"><label>朝向</label><input id="tw-orientation" type="text" placeholder="如 西南"></div>
         <div class="fld full"><label>贝壳链接</label><input id="tw-url" type="text" placeholder="https://…"></div>
         <div class="fld full"><label>备注 / 来源</label><input id="tw-note" type="text" placeholder="如 来自【贝壳找房APP】"></div>
       </div>
@@ -3523,9 +3526,9 @@ async function syncReqFromCloud(){
 /* ==================== 临时待看 ==================== */
 const TEMP_KEY = "qiju_tempwatch_v1";
 const TEMP_SEED_FLAG = "qiju_temp_seed_v1";
-/* 七星园是用户 2026-11-07 给的第一条临时待看：2居 76.68㎡ 285万，低楼层/19层，西南；
+/* 七星园是用户 2026-11-07 给的第一条临时待看：北京 石景山 鲁谷，2居 76.68㎡ 285万，低楼层/19层，西南；
    原信息里的“37”按单价约 3.7 万/㎡理解，单价由 285万÷76.68㎡ 算得 37167 元/㎡ */
-const TEMP_SEED = { community: "七星园", rooms: 2, halls: null, areaSqm: 76.68, totalPriceWan: 285, unitPrice: 37167, floorText: "低楼层/19层", totalFloors: 19, orientation: "西南", url: "https://m.ke.com/bj/ershoufang/101140349008.html?shareSource=beike_app", note: "来自【贝壳找房APP】" };
+const TEMP_SEED = { community: "七星园", city: "北京", district: "石景山区", sector: "鲁谷", rooms: 2, halls: null, areaSqm: 76.68, totalPriceWan: 285, unitPrice: 37167, floorText: "低楼层/19层", totalFloors: 19, orientation: "西南", url: "https://m.ke.com/bj/ershoufang/101140349008.html?shareSource=beike_app", note: "来自【贝壳找房APP】" };
 function loadTemp(){ try { const v = JSON.parse(localStorage.getItem(TEMP_KEY) || "null"); return Array.isArray(v) ? v : []; } catch { return []; } }
 let tempWatch = loadTemp();
 let tempPromoteId = null;
@@ -3562,6 +3565,8 @@ function parseTempShare(text){
   const out = {};
   const urlM = t.match(/https?:\/\/[^\s"'）】，,。；;、]+/);
   if (urlM) out.url = urlM[0];
+  const cityM = t.match(/\/(bj|tj)\//);
+  if (cityM) out.city = cityM[1] === "bj" ? "北京" : "天津";
   const areaM = t.match(/(\d+(?:\.\d+)?)\s*(?:㎡|平米|平方米)/);
   if (areaM) out.areaSqm = Number(areaM[1]);
   const totalM = t.match(/(\d+(?:\.\d+)?)\s*万(?![\/㎡])/);
@@ -3592,8 +3597,10 @@ function tempItemHTML(t){
   if (t.floorText) parts.push(t.floorText);
   if (t.orientation) parts.push(t.orientation + "向");
   const date = t.createdAt ? String(t.createdAt).slice(0, 10) : "";
+  const loc = [t.city, t.district, t.sector].filter(x => x && String(x).trim()).join(" · ");
   return `<div class="temp-item">
     <div class="t-title">${esc(t.community || "（未命名）")}</div>
+    ${loc ? `<div class="t-meta">${esc(loc)}</div>` : ""}
     <div class="t-meta">${parts.length ? esc(parts.join(" · ")) : "信息待补充"}</div>
     ${t.note ? `<div class="t-note">${esc(t.note)}</div>` : ""}
     <div class="t-foot"><span class="t-date">${esc(date)}</span><span class="t-actions">
@@ -3604,7 +3611,27 @@ function tempItemHTML(t){
     </span></div>
   </div>`;
 }
+/* 临时条目缺城市/区域/板块时，按小区名在台账里精确匹配一处补上（只填空，不覆盖已填的） */
+function enrichTempLoc(){
+  let changed = false;
+  for (const t of tempWatch) {
+    if (t.city && t.district && t.sector) continue;
+    const city = (t.city || "").trim() || cityFromBeikeUrl(t.url);
+    const cands = houses.filter(h => (h.community || "").trim() === (t.community || "").trim());
+    const h = cands.find(x => city && x.city === city) || (cands.length === 1 ? cands[0] : null);
+    if (!h) continue;
+    if (!t.city && h.city) { t.city = h.city; changed = true; }
+    if (!t.district && h.district) { t.district = h.district; changed = true; }
+    if (!t.sector && h.sector) { t.sector = h.sector; changed = true; }
+  }
+  if (changed) saveTemp();
+}
+function tempGroupKey(t){
+  const p = [t.city, t.district, t.sector].filter(x => x && String(x).trim());
+  return p.length ? p.join(" · ") : "待补充位置";
+}
 function renderTemp(main){
+  enrichTempLoc();
   if (!tempWatch.length && !localStorage.getItem(TEMP_SEED_FLAG)) {
     try { localStorage.setItem(TEMP_SEED_FLAG, "1"); } catch {}
     main.innerHTML = tempEmptyHTML();
@@ -3612,9 +3639,22 @@ function renderTemp(main){
     return;
   }
   if (!tempWatch.length) { main.innerHTML = tempEmptyHTML(); return; }
-  const items = tempWatch.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-  main.innerHTML = `<div class="temp-head"><span>共 ${tempWatch.length} 条 · 先记下来，确认后再转入房源</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>
-  <div class="temp-grid">${items.map(tempItemHTML).join("")}</div>`;
+  const items = tempWatch.slice().sort((a, b) => {
+    const ka = tempGroupKey(a), kb = tempGroupKey(b);
+    if (ka !== kb) return ka === "待补充位置" ? 1 : kb === "待补充位置" ? -1 : ka.localeCompare(kb, "zh");
+    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  });
+  const groups = new Map();
+  for (const t of items) { const k = tempGroupKey(t); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); }
+  main.innerHTML = `<div class="temp-head"><span>共 ${tempWatch.length} 条 · 按城市 / 区域 / 板块分组</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>` +
+    [...groups.entries()].map(([k, ts]) => {
+      const gk = "temp:" + k;
+      const isCol = collapsed.has(gk);
+      return `<section class="group">
+        <button class="group-head ${isCol ? "closed" : ""}" data-group="${esc(gk)}"><span class="t">${esc(k)}</span><span class="cnt">${ts.length} 条</span><span class="chev">▾</span></button>
+        ${isCol ? "" : `<div class="temp-grid">${ts.map(tempItemHTML).join("")}</div>`}
+      </section>`;
+    }).join("");
 }
 function openTempForm(id, prefill){
   const t = id ? tempWatch.find(x => x.id === id) : null;
@@ -3622,7 +3662,7 @@ function openTempForm(id, prefill){
   tempCtx = { id: t ? t.id : null };
   $("#temp-title").textContent = t ? "编辑临时待看" : "添加临时待看";
   const set = (sel, val) => { const el = $(sel); if (el) el.value = (val === null || val === undefined) ? "" : val; };
-  set("#tw-community", v.community); set("#tw-rooms", v.rooms); set("#tw-halls", v.halls);
+  set("#tw-community", v.community); set("#tw-city", v.city); set("#tw-district", v.district); set("#tw-sector", v.sector); set("#tw-rooms", v.rooms); set("#tw-halls", v.halls);
   set("#tw-areaSqm", v.areaSqm); set("#tw-totalPriceWan", v.totalPriceWan); set("#tw-unitPrice", v.unitPrice);
   set("#tw-floorText", v.floorText); set("#tw-totalFloors", v.totalFloors); set("#tw-orientation", v.orientation);
   set("#tw-url", v.url); set("#tw-note", v.note); set("#tw-paste", "");
@@ -3641,7 +3681,7 @@ $("#btn-temp-parse").addEventListener("click", () => {
   if (!raw.trim()) { toast("先粘贴贝壳分享的文字"); return; }
   const p = parseTempShare(raw);
   const set = (sel, val) => { const el = $(sel); if (el && el.value.trim() === "" && val !== undefined && val !== null && val !== "") el.value = val; };
-  set("#tw-community", p.community); set("#tw-rooms", p.rooms); set("#tw-halls", p.halls);
+  set("#tw-community", p.community); set("#tw-city", p.city); set("#tw-rooms", p.rooms); set("#tw-halls", p.halls);
   set("#tw-areaSqm", p.areaSqm); set("#tw-totalPriceWan", p.totalPriceWan); set("#tw-unitPrice", p.unitPrice);
   set("#tw-floorText", p.floorText); set("#tw-totalFloors", p.totalFloors); set("#tw-orientation", p.orientation);
   set("#tw-url", p.url);
@@ -3653,7 +3693,7 @@ $("#btn-temp-save").addEventListener("click", async () => {
   const txt = id => $(id).value.trim();
   const community = txt("#tw-community");
   if (!community) { toast("小区名不能为空"); return; }
-  const data = { community, rooms: num("#tw-rooms"), halls: num("#tw-halls"), areaSqm: num("#tw-areaSqm"), totalPriceWan: num("#tw-totalPriceWan"), unitPrice: num("#tw-unitPrice"), floorText: txt("#tw-floorText"), totalFloors: num("#tw-totalFloors"), orientation: txt("#tw-orientation"), url: txt("#tw-url"), note: txt("#tw-note") };
+  const data = { community, city: txt("#tw-city"), district: txt("#tw-district"), sector: txt("#tw-sector"), rooms: num("#tw-rooms"), halls: num("#tw-halls"), areaSqm: num("#tw-areaSqm"), totalPriceWan: num("#tw-totalPriceWan"), unitPrice: num("#tw-unitPrice"), floorText: txt("#tw-floorText"), totalFloors: num("#tw-totalFloors"), orientation: txt("#tw-orientation"), url: txt("#tw-url"), note: txt("#tw-note") };
   if (tempCtx.id) { const t = tempWatch.find(x => x.id === tempCtx.id); if (t) Object.assign(t, data); }
   else tempWatch.push({ id: "t" + Date.now() + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString(), ...data });
   const ok = await saveTemp();
@@ -3683,13 +3723,15 @@ function cityFromBeikeUrl(url){
 }
 function promoteTemp(id){
   const t = tempWatch.find(x => x.id === id); if (!t) return;
-  const city = cityFromBeikeUrl(t.url);
+  const city = (t.city || "").trim() || cityFromBeikeUrl(t.url);
   const cands = houses.filter(h => (h.community || "").trim() === (t.community || "").trim());
   const h = cands.find(x => city && x.city === city) || cands[0];
   if (!h) {
     openEdit(null);
     const ce = $("#ef-community"); if (ce) ce.value = t.community || "";
     const ci = $("#ef-city"); if (ci) { ci.value = city || ""; ci.dispatchEvent(new Event("input")); }
+    const di = $("#ef-district"); if (di && t.district) di.value = t.district;
+    const se = $("#ef-sector"); if (se && t.sector) se.value = t.sector;
     toast("台账里还没有「" + (t.community || "") + "」，先建小区，保存后再回来点「转入房源」");
     return;
   }
