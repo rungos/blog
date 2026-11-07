@@ -365,10 +365,11 @@
   .temp-item .t-title{font-size:15.5px; font-weight:700; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .temp-item .t-meta{font-size:13px; color:var(--muted); line-height:1.6}
   .temp-item .t-note{font-size:12.5px; color:var(--muted)}
-  .temp-item .t-foot{display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:6px}
+  .temp-item .t-foot{display:flex; align-items:center; flex-wrap:nowrap; gap:6px; margin-top:6px}
+  .temp-item .t-foot .btn{padding:5px 9px; font-size:12px}
   .temp-item .t-foot .t-actions{margin-left:auto}
   .temp-item .t-date{font-size:12px; color:var(--muted); white-space:nowrap; flex:none}
-  .temp-item .t-actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+  .temp-item .t-actions{display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-end}
   .dd-wrap.dd-off{opacity:.45; pointer-events:none}
   /* ---------- floor plan (户型图) ---------- */
   .lcard{display:flex; gap:12px}
@@ -1036,7 +1037,7 @@ let curTab = "all";
 let viewMode = "houses";
 let lastSortBeforeLfav = null;
 let collapsed = new Set();
-let tempOpen = new Set(); /* 临时待看已展开的小区：默认全部折叠，点小区名展开 */
+let tempOpen = new Set(); /* 临时待看已展开的分组：默认全部折叠，点分组名展开 */
 let compareSet = new Set();
 let detailId = null;
 let editingId = null;
@@ -3664,10 +3665,9 @@ function tempRelDate(iso){
   if (diff < 30) return diff + "天前 · " + md;
   return d.getFullYear() === now.getFullYear() ? md : d.getFullYear() + "-" + md;
 }
-/* 临时待看按小区分组（之前按城市/区域/板块） */
 function tempGroupKey(t){
-  const c = (t.community || "").trim();
-  return c || "（未命名）";
+  const p = [t.city, t.district, t.sector].filter(x => x && String(x).trim());
+  return p.length ? p.join(" · ") : "待补充位置";
 }
 function renderTemp(main){
   enrichTempLoc();
@@ -3680,7 +3680,7 @@ function renderTemp(main){
   if (!tempWatch.length) { main.innerHTML = tempEmptyHTML(); return; }
   const items = filteredTemp().sort((a, b) => {
     const ka = tempGroupKey(a), kb = tempGroupKey(b);
-    if (ka !== kb) return ka === "（未命名）" ? 1 : kb === "（未命名）" ? -1 : ka.localeCompare(kb, "zh");
+    if (ka !== kb) return ka === "待补充位置" ? 1 : kb === "待补充位置" ? -1 : ka.localeCompare(kb, "zh");
     return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
   });
   if (!items.length) {
@@ -3689,14 +3689,12 @@ function renderTemp(main){
   }
   const groups = new Map();
   for (const t of items) { const k = tempGroupKey(t); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); }
-  main.innerHTML = `<div class="temp-head"><span>共 ${items.length} 条${items.length !== tempWatch.length ? ` · 全部 ${tempWatch.length} 条` : ""} · 按小区分组，点击小区查看房源</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>` +
+  main.innerHTML = `<div class="temp-head"><span>共 ${items.length} 条${items.length !== tempWatch.length ? ` · 全部 ${tempWatch.length} 条` : ""} · 按城市 / 区域 / 板块分组，点击分组查看房源</span><button class="btn primary" data-temp-act="add">＋ 添加临时待看</button></div>` +
     [...groups.entries()].map(([k, ts]) => {
       const gk = "temp:" + k;
       const isCol = !tempOpen.has(gk);
-      const locs = [...new Set(ts.map(t => [t.city, t.district, t.sector].filter(x => x && String(x).trim()).join(" · ")).filter(Boolean))];
-      const locTxt = locs.length === 1 ? esc(locs[0]) + " · " : "";
       return `<section class="group">
-        <button class="group-head ${isCol ? "closed" : ""}" data-group="${esc(gk)}"><span class="t">${esc(k)}</span><span class="cnt">${locTxt}${ts.length} 条</span><span class="chev">▾</span></button>
+        <button class="group-head ${isCol ? "closed" : ""}" data-group="${esc(gk)}"><span class="t">${esc(k)}</span><span class="cnt">${ts.length} 条</span><span class="chev">▾</span></button>
         ${isCol ? "" : `<div class="temp-grid">${ts.map(tempItemHTML).join("")}</div>`}
       </section>`;
     }).join("");
@@ -3742,7 +3740,8 @@ $("#btn-temp-save").addEventListener("click", async () => {
   if (tempCtx.id) { const t = tempWatch.find(x => x.id === tempCtx.id); if (t) Object.assign(t, data); }
   else tempWatch.push({ id: "t" + Date.now() + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString(), ...data });
   const ok = await saveTemp();
-  tempOpen.add("temp:" + community);
+  const sk = [data.city, data.district, data.sector].filter(x => x && String(x).trim()).join(" · ") || "待补充位置";
+  tempOpen.add("temp:" + sk);
   closeTemp();
   if (viewMode === "temp") renderList(); else renderStats();
   toast(ok ? "已保存（已同步到云端）" : "已保存在本机，云端同步失败，联网后重新保存一次");
